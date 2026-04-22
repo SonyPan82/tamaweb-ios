@@ -71,12 +71,14 @@ const UI = {
         const activeListContainers = [...document.querySelectorAll('.screen-wrapper .generic-list-container')];
         const previousListItem = activeListContainers?.at(-1);
         if(activeListContainers.length > 0){ // to make sure it always display "back" when only one layer deep in the interaction tree
-            backBtnName = backFnTitle 
-            || UI.lastClickedButton?.textContent?.trim()?.replace(' new!', '') 
-            || previousListItem?._listItems?.at(0)?.name 
+            backBtnName = backFnTitle
+            || UI.lastClickedButton?.textContent?.trim()?.replace(' new!', '')
+            || previousListItem?._listItems?.at(0)?.name
             || backBtnName;
         }
         UI.lastClickedButton = null;
+        // translate back button label
+        if(window.t) backBtnName = window.t(backBtnName);
 
         const list = document.querySelector('.cloneables .generic-list-container').cloneNode(true);
         // list.style['z-index'] = 3;
@@ -93,7 +95,7 @@ const UI = {
             UI.create({
                 parent: list,
                 componentType: 'button',
-                innerHTML: ellipsis(backBtnName, 13),
+                innerHTML: ellipsis(backBtnName, 20),
                 className: 'back-btn generic-btn solid primary bold sticky-top no-anim',
                 onclick: () => {
                     if(backFn) backFn();

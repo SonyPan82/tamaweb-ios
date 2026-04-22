@@ -15,3 +15,10 @@ scripts/output.js
 resources/img/item/plants.pdn
 *.pdn
 *.flp
+
+# Capacitor / build artifacts
+www/
+ios/App/Pods/
+ios/App/App/public/
+package-lock.json
+.DS_Store

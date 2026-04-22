@@ -87,7 +87,7 @@ const randomFromArray = function(arr){
 const pRandomFromArray = function(arr){
     return arr[pRandom.getIntBetween(0, arr.length - 1)];
 }
-const ellipsis = (str, length = 15) => {
+const ellipsis = (str, length = 22) => {
     if(str?.length > length){
         return str?.slice(0, length).concat('…');
     }

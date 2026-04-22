@@ -1,0 +1,28 @@
+{
+  "name": "tamaweb",
+  "version": "1.0.0",
+  "description": "![Tamaweb](https://img.itch.zone/aW1nLzIwNjE0MTY1LnBuZw==/original/GkKbBT.png)",
+  "main": "service-worker.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "sync": "npm run build && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/autosam/Tamaweb.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/autosam/Tamaweb/issues"
+  },
+  "homepage": "https://github.com/autosam/Tamaweb#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1"
+  }
+}

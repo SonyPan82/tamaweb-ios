@@ -46,35 +46,64 @@ customElements.define("c-sprite", SpriteElement);
     }
 }); */
 
+// iOS Safari does not support OGG — resolve to M4A on iOS
+const _isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+function _resolveAudioPath(path) {
+    if (_isIOS && path.endsWith('.ogg')) {
+        return path.slice(0, -4) + '.m4a';
+    }
+    return path;
+}
+
 class AudioChannel {
     audioContext = new AudioContext();
     audioBufferCache = new Map();
     currentSource = null;
     isBusy = false;
+    _unlocked = false;
+
     constructor(props = {}){
         const { preloadList } = props;
+        // iOS requires a user gesture to resume AudioContext
+        const unlock = () => {
+            if (this._unlocked) return;
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+            this._unlocked = true;
+        };
+        document.addEventListener('touchstart', unlock, { once: true });
+        document.addEventListener('touchend',   unlock, { once: true });
+        document.addEventListener('click',      unlock, { once: true });
 
         if(preloadList){
             preloadList.forEach(path => this.load(path));
         }
-
     }
+
     async load(path){
-        const response = await fetch(path);
+        const resolved = _resolveAudioPath(path);
+        const response = await fetch(resolved);
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
         this.audioBufferCache.set(path, audioBuffer);
         return audioBuffer;
     }
+
     async play(path, force) {
         if (this.isBusy && !force) return;
+
+        // resume context if suspended (iOS)
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
 
         const buffer = this.audioBufferCache.get(path) ?? await this.load(path);
 
         if (force && this.currentSource) {
-            try {
-                this.currentSource.stop();
-            } catch (e) {}
+            try { this.currentSource.stop(); } catch (e) {}
             this.currentSource.disconnect();
         }
 

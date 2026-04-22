@@ -1,9 +1,30 @@
+// Clipboard helper — works on iOS WKWebView where navigator.clipboard requires a direct gesture
+function _copyText(text) {
+    // Try modern API first (works if called synchronously in a user gesture)
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).catch(() => _copyTextFallback(text));
+    } else {
+        _copyTextFallback(text);
+    }
+}
+function _copyTextFallback(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+}
+
 const App = {
     PI2: Math.PI * 2, INF: 999999999,
     deltaTime: 0, lastTime: 0, playTime: 0, hour: 12, accurateDeltaTime: 0,
     mouse: { x: 0, y: 0, isInBounds : false },
     userId: '_', userName: null, sessionId: Math.round(Math.random() * 9999999999),
     ENV: location.port == 5500 ? 'dev' : 'prod', isOnItch: false, isOnElectronClient: false,
+    isNativeApp: false,
     shellBackground: '', deferredInstallPrompt: null,
 
     gameEventsHistory: {}, 
@@ -19,11 +40,13 @@ const App = {
         screenSize: 1,
         playSound: true,
         vibrate: true,
-        displayShell: true,
+        displayShell: window.innerWidth > 768,
         displayShellButtons: true,
         displayShellLogo: true,
         shellShape: 6,
         backgroundColor: '#FFDEAD',
+        backgroundTheme: 'orange',
+        themeMode: 'light',
         backgroundPattern: 'resources/img/ui/bg_pattern_01.png',
         notifications: false,
         automaticAging: true,
@@ -167,6 +190,8 @@ const App = {
         DISCORD: 'https://tamawebgame.github.io/discord',
     },
     async init () {
+        App.isNativeApp = location.protocol === 'capacitor:' || !!window.Capacitor;
+
         // window load events
         this.registerLoadEvents();
 
@@ -176,7 +201,14 @@ const App = {
 
         // init
         this.initSound();
-        App.drawer = new Drawer(document.querySelector('.graphics-canvas'));
+        // Scale canvas internal resolution to fill the device screen natively (integer scale for crisp pixels)
+        const _gameCanvas = document.querySelector('.graphics-canvas');
+        App.CANVAS_INTERNAL_SCALE = window.innerWidth <= 768
+            ? Math.max(2, Math.floor(window.innerWidth / 96))
+            : 2;
+        _gameCanvas.width  = 96 * App.CANVAS_INTERNAL_SCALE;
+        _gameCanvas.height = 96 * App.CANVAS_INTERNAL_SCALE;
+        App.drawer = new Drawer(_gameCanvas, undefined, undefined, App.CANVAS_INTERNAL_SCALE);
         Object2d.setDrawer(App.drawer);
 
         // moment settings
@@ -471,17 +503,15 @@ const App = {
                 ? evt.targetTouches[0]
                 : evt;
 
-            const x = (target.clientX - rect.left) * (canvas.width / rect.width);
-            const y = (target.clientY - rect.top) * (canvas.height / rect.height);
+            const scale = App.CANVAS_INTERNAL_SCALE ?? 1;
+            const gameW = canvas.width / scale;
+            const gameH = canvas.height / scale;
+            const x = (target.clientX - rect.left) * (canvas.width / rect.width) / scale;
+            const y = (target.clientY - rect.top)  * (canvas.height / rect.height) / scale;
 
-            App.mouse.isInBounds =
-                x >= 0 &&
-                y >= 0 &&
-                x < canvas.width &&
-                y < canvas.height;
-
-            App.mouse.x = Math.max(0, Math.min(x, canvas.width));
-            App.mouse.y = Math.max(0, Math.min(y, canvas.height));
+            App.mouse.isInBounds = x >= 0 && y >= 0 && x < gameW && y < gameH;
+            App.mouse.x = Math.max(0, Math.min(x, gameW));
+            App.mouse.y = Math.max(0, Math.min(y, gameH));
         }
         const mouseDownHandler = (evt) => {
             App.mouse.isDown = true;
@@ -541,11 +571,35 @@ const App = {
             // App.save();
         }
 
-        if (navigator.storage && "persist" in navigator.storage) {
+        if (App.isNativeApp) {
+            App.isStoragePersistent = true;
+        } else if (navigator.storage && "persist" in navigator.storage) {
             navigator.storage.persist().then((persistent) => {
                 App.isStoragePersistent = persistent;
             });
         }
+    },
+    getBackgroundThemeColor: function(backgroundTheme = 'orange', themeMode = 'light'){
+        const themeColors = {
+            orange: {
+                light: '#FFDEAD',
+                dark: '#2A1A12',
+            },
+            blue: {
+                light: '#CFE8FF',
+                dark: '#112338',
+            },
+            green: {
+                light: '#D7F5D2',
+                dark: '#12281A',
+            },
+            pink: {
+                light: '#FFD6EA',
+                dark: '#331928',
+            },
+        };
+        const selectedTheme = themeColors[backgroundTheme] || themeColors.orange;
+        return selectedTheme[themeMode] || selectedTheme.light;
     },
     sendSessionEvent: function(login){
         if(login){
@@ -576,6 +630,8 @@ const App = {
     },
     applySettings: function(){
         const graphicsWrapper = document.querySelector('.graphics-wrapper');
+        const themeMode = this.settings.themeMode || 'light';
+        const backgroundTheme = this.settings.backgroundTheme || 'orange';
 
         // fullscreen param
         const isFullscreen = new URLSearchParams(location.search).has('fullscreen');
@@ -585,8 +641,11 @@ const App = {
         if(this.settings.theme){
             document.body.className = `theme-${this.settings.theme}`;
         }
+        document.body.dataset.themeMode = themeMode;
+        document.body.dataset.backgroundTheme = backgroundTheme;
 
         // background color
+        this.settings.backgroundColor = this.getBackgroundThemeColor(backgroundTheme, themeMode);
         document.documentElement.style.setProperty(
             '--bg-color',
             this.settings.backgroundColor
@@ -610,8 +669,21 @@ const App = {
         // screen / shell size
         this.settings.shellAdditionalSize = clamp(this.settings.shellAdditionalSize, -0.5, 5);
         this.settings.screenSize = clamp(this.settings.screenSize, 0.6, 5);
+        if (window.innerWidth <= 768) {
+            this.settings.displayShell = false;
+            // canvas fills screen natively — no transform needed
+            this.settings.screenSize = 1;
+            const _sz = `${App.drawer.canvas.width}px`;
+            graphicsWrapper.style.maxWidth = _sz;
+            graphicsWrapper.style.height = _sz;
+        }
         graphicsWrapper.style.transform = `scale(${this.settings.screenSize})`;
         document.querySelector('.dom-shell').style.transform = `scale(${this.settings.screenSize + this.settings.shellAdditionalSize})`;
+        const _cssCanvasSize = App.drawer?.canvas.width ?? 192;
+        document.documentElement.style.setProperty(
+            '--canvas-visual-offset',
+            `${Math.max(0, (this.settings.screenSize * _cssCanvasSize - _cssCanvasSize) / 2)}px`
+        );
 
         // shell
         const domShell = document.querySelector('.dom-shell');
@@ -2544,23 +2616,7 @@ const App = {
             App.playSound(`resources/sounds/ui_click_06.ogg`, true);
             App.vibrate();
             
-            if(typeof App.temp.showStoragePersistentBadge === 'undefined'){
-                App.temp.showStoragePersistentBadge = !App.isStoragePersistent;
-            }
-            const settingsBadge = App.temp.showStoragePersistentBadge ? App.getBadge('', 'red circle') : '';
-            const renderingMainMenu = App.definitions.main_menu.map(item => {
-                if(item.id === 'settings'){
-                    return {
-                        ...item,
-                        name: `${item.name} ${settingsBadge}`,
-                        onclick: () => {
-                            item.onclick();
-                            App.temp.showStoragePersistentBadge = false;
-                        }
-                    }
-                }
-                return item;
-            })
+            const renderingMainMenu = App.definitions.main_menu.map(item => item)
             App.displayGrid([
                 ...renderingMainMenu,
                 {
@@ -2859,10 +2915,39 @@ const App = {
         },
         open_settings: function(){
             const ignoreFirstDivider = !(App.deferredInstallPrompt || !App.isOnItch);
+            const appearanceLabels = {
+                orange: 'orange',
+                blue: 'bleu',
+                green: 'vert',
+                pink: 'rose',
+            };
+            const appearanceOptions = [
+                {
+                    _mount: (e) => e.innerHTML = `mode: <i>${App.settings.themeMode === 'dark' ? 'dark' : 'light'}</i>`,
+                    onclick: (item) => {
+                        App.settings.themeMode = App.settings.themeMode === 'dark' ? 'light' : 'dark';
+                        App.applySettings();
+                        item._mount();
+                        return true;
+                    }
+                },
+                ...Object.keys(appearanceLabels).map((backgroundTheme) => ({
+                    _mount: (e) => {
+                        const isActive = App.settings.backgroundTheme === backgroundTheme;
+                        e.innerHTML = `${isActive ? App.getIcon('check') : ''} fond ${appearanceLabels[backgroundTheme]}`;
+                    },
+                    onclick: (item) => {
+                        App.settings.backgroundTheme = backgroundTheme;
+                        App.applySettings();
+                        item._mount();
+                        return true;
+                    }
+                })),
+            ];
 
             const settings = App.displayList([
                 {
-                    _ignore: App.isStoragePersistent,
+                    _ignore: App.isStoragePersistent || App.isNativeApp,
                     name: `
                         <span>
                             <b class="blink" style="color: red;">Your save data is at risk.</b><br> Your browser may <b>delete</b> it unexpectedly.
@@ -2907,6 +2992,12 @@ const App = {
                                 }
                             },
                         ])
+                    }
+                },
+                {
+                    name: `appearance`,
+                    onclick: () => {
+                        return App.displayList(appearanceOptions);
                     }
                 },
                 {
@@ -2990,7 +3081,7 @@ const App = {
                                                         onclick: () => {
                                                             try {
                                                                 if(App.isOnItch) throw 'itch_clipboard';
-                                                                navigator.clipboard.writeText(charCode);
+                                                                _copyText(charCode);
                                                                 console.log('save code copied', charCode);
                                                                 App.displayPopup('Save code copied!', 1000);
                                                             } catch(e) {
@@ -3329,37 +3420,6 @@ const App = {
                                 }
                             },
                             {
-                                name: `back color`,
-                                onclick: () => {
-                                    App.displayList([
-                                        {
-                                            name: `<input type="color" value="${App.settings.backgroundColor}" id="background-color-picker"></input>`,
-                                            onclick: () => { return true; },
-                                        },
-                                        {
-                                            name: 'apply',
-                                            onclick: () => {
-                                                let colorPicker = document.querySelector('#background-color-picker');
-                                                App.settings.backgroundColor = colorPicker.value;
-                                                App.applySettings();
-                                                return true;
-                                            }
-                                        },
-                                        {
-                                            name: 'reset',
-                                            onclick: () => {
-                                                let colorPicker = document.querySelector('#background-color-picker');
-                                                colorPicker.value = '#FFDEAD';
-                                                App.settings.backgroundColor = colorPicker.value;
-                                                App.applySettings();
-                                                return true;
-                                            }
-                                        }
-                                    ])
-                                    return true;
-                                }
-                            },
-                            {
                                 _mount: (btn) => {
                                     const hasNew = App.definitions.background_pattern.some((entry) => {
                                         const isUnlocked = entry.unlockKey ? App.getRecord(entry.unlockKey) : true;
@@ -3399,172 +3459,6 @@ const App = {
                         ]);
                         return true;
                     }
-                },
-                {
-                    name: `Change Theme`,
-                    onclick: () => {
-                        const newThemes = [];
-                        return App.displayList(
-                            [...App.definitions.themes].sort((a, b) => newThemes.includes(b) - newThemes.includes(a)).map(themeName => ({
-                                name: `${themeName.replace('color ', '')} ${newThemes.includes(themeName) ? App.getBadge('new!') : ''}`,
-                                // class: `theme-${themeName}`,
-                                onclick: () => {
-                                    App.settings.theme = themeName;
-                                    App.applySettings();
-                                    return true;
-                                }
-                            }))
-                        )
-                    }
-                },
-                {
-                    name: `Shell Settings`,
-                    onclick: () => {
-                        // App.handlers.open_shell_background_list();
-                        // return true;
-
-                        App.displayList([
-                            {
-                                _mount: (e) => e.innerHTML = `display shell: <i>${App.settings.displayShell ? App.getIcon('eye') : App.getIcon('eye-slash')}</i>`,
-                                onclick: (item) => {
-                                    App.settings.displayShell = !App.settings.displayShell;
-                                    App.applySettings();
-                                    item._mount(); 
-                                    return true;
-                                }
-                            },
-                            {
-                                _mount: (e) => e.innerHTML =  `shell button: <i>${App.settings.displayShellButtons ? App.getIcon('eye') : App.getIcon('eye-slash')}</i>`,
-                                onclick: (item) => {
-                                    App.settings.displayShellButtons = !App.settings.displayShellButtons;
-                                    App.applySettings();
-                                    item._mount(); 
-                                    return true;
-                                }
-                            },
-                            {
-                                _mount: (e) => e.innerHTML =  `shell logo: <i>${App.settings.displayShellLogo ? App.getIcon('eye') : App.getIcon('eye-slash')}</i>`,
-                                onclick: (item) => {
-                                    App.settings.displayShellLogo = !App.settings.displayShellLogo;
-                                    App.applySettings();
-                                    item._mount(); 
-                                    return true;
-                                }
-                            },
-                            {
-                                name: `+ shell size`,
-                                onclick: () => {
-                                    App.settings.shellAdditionalSize += 0.1;
-                                    App.applySettings();
-                                    return true;
-                                }
-                            },
-                            {
-                                name: `- shell size`,
-                                onclick: () => {
-                                    App.settings.shellAdditionalSize -= 0.1;
-                                    App.applySettings();
-                                    return true;
-                                }
-                            },
-                            {
-                                name: `reset shell size`,
-                                onclick: () => {
-                                    App.settings.shellAdditionalSize = 0;
-                                    App.applySettings();
-                                    return true;
-                                }
-                            },
-                            {
-                                _mount: (e) => e.innerHTML = `shell shape: <i>${App.settings.shellShape}</i>`,
-                                onclick: (item) => {
-                                    App.settings.shellShape++;
-                                    if(App.settings.shellShape > App.constants.MAX_SHELL_SHAPES){
-                                        App.settings.shellShape = 1;
-                                    }
-                                    App.applySettings();
-                                    item._mount()
-                                    return true;
-                                }
-                            },
-                            {
-                                _mount: (e) => {
-                                    const hasNew = App.definitions.shell_background.some((entry) => {
-                                        const isUnlocked = entry.unlockKey ? App.getRecord(entry.unlockKey) : true;
-                                        return entry.isNew && isUnlocked;
-                                    });
-                                    e.innerHTML = `change shell ${hasNew ? App.getBadge('new!') : ''}`
-                                },
-                                onclick: () => {
-                                    App.handlers.open_shell_background_list();
-                                    return true;
-                                }
-                            },
-                            {
-                                name: 'custom shell',
-                                onclick: () => {
-                                    let display = App.displayList([
-                                        {
-                                            name: `<label class="custom-file-upload"><input id="shell-image-file" type="file"></input>Browse</label>`,
-                                            onclick: (btn) => {
-                                                // btn.querySelector('label').click();
-                                                return true;
-                                            }
-                                        },
-                                        {
-                                            name: 'enter url',
-                                            onclick: () => {
-                                                App.displayPrompt(`Enter URL:`, [
-                                                    {
-                                                        name: 'set',
-                                                        onclick: (url) => {
-                                                            let res = App.setShellBackground(url);
-                                                            if(res) App.displayPopup('Shell background set');
-                                                            return true;
-                                                        }
-                                                    },
-                                                    {name: 'cancel', class: 'back-btn', onclick: () => {}},
-                                                ]);
-                                                return true;
-                                            }
-                                        },
-                                        {
-                                            _ignore: !App.isTester,
-                                            name: 'from clipboard',
-                                            onclick: async () => {
-                                                try {
-                                                    const clipboardItems = await navigator.clipboard.read();
-    
-                                                    const item = clipboardItems[0];
-                                                    const type = item.types[0]; 
-                                                    const blob = await item.getType(type);
-    
-                                                    const reader = new FileReader();
-                                                    reader.onload = (event) => {
-                                                        App.setShellBackground(event.target.result);
-                                                    };
-                                                    reader.readAsDataURL(blob);
-                                                } catch(e) {
-                                                    console.error(e);
-                                                }
-                                            }
-                                        }
-                                    ]);
-
-                                    App.handleFileLoad(display.querySelector('#shell-image-file'), 'readAsDataURL', async (data) => {
-                                        const downscaledData = await downscaleImage(data, 768, 768, 0.5);
-                                        let res = App.setShellBackground(downscaledData);
-                                        if(res) App.displayPopup('Shell background set');
-                                        return true;
-                                    })
-
-                                    return true;
-                                }
-                            },
-                        ])
-
-                        return true;
-                    },
                 },
                 {
                     name: 'input code',
@@ -4544,7 +4438,7 @@ const App = {
             list.appendChild(content);
         },
         copyToClipboard: (content) => {
-            navigator.clipboard.writeText(content);
+            App.copyText(content);
             App.displayPopup('Copied!');
         },
         open_plant_stats: function(plant){
@@ -6179,12 +6073,10 @@ const App = {
                         App.displayList([
                             {
                                 name: 'get code',
-                                onclick: async () => {
-                                    const loading = App.displayPopup('Loading...', App.INF);
-                                    const pet = await window.idbKeyval.get('pet');
-                                    loading.close();
+                                onclick: () => {
+                                    const pet = App.petDefinition?.serialize?.() ?? App.petDefinition;
                                     let charCode = 'friend:' + btoa(encodeURIComponent(JSON.stringify({ user_id: App.userId, pet })));
-                                    navigator.clipboard.writeText(charCode);
+                                    _copyText(charCode);
                                     console.log(charCode);
                                     App.displayConfirm(`Your friend code has been copied to the clipboard!`, [
                                         {
@@ -7112,6 +7004,7 @@ const App = {
         listItems.forEach((item, i) => {
             if(item._ignore) return;
             if(!item.name) item.name = '';
+            if(window.t) item.name = window.t(item.name);
 
             let element;
             let defaultClassName;
@@ -7194,7 +7087,7 @@ const App = {
         listItems.forEach(item => {
             let button = document.createElement('button');
                 button.className = 'grid-item ' + (item.class ? item.class : '');
-                button.innerHTML = item.name;
+                button.innerHTML = window.t ? window.t(item.name) : item.name;
                 button.onclick = () => {
                     let result = item.onclick(button, list);
                     if(!result){

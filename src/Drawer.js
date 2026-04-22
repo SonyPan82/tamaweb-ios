@@ -1,11 +1,12 @@
 class Drawer {
-    constructor(canvas, optWidth, optHeight) {
+    constructor(canvas, optWidth, optHeight, internalScale = 1) {
         if(!canvas) {
             canvas = document.createElement('canvas');
             canvas.setAttribute('width', optWidth);
             canvas.setAttribute('height', optHeight);
         }
         this.canvas = canvas;
+        this.internalScale = internalScale;
         this.context = canvas.getContext('2d');
         this.context.fillStyle = 'white';
         this.context.font = '8px Calibri';
@@ -14,10 +15,13 @@ class Drawer {
         this.context.mozImageSmoothingEnabled = false;
         this.context.webkitImageSmoothingEnabled = false;
         this.context.imageSmoothingEnabled = false;
-        // this.bounds = canvas.getBoundingClientRect();
+
+        // scale context so all game-space coordinates (0-96) map to the full canvas
+        if (internalScale !== 1) this.context.scale(internalScale, internalScale);
+
         this.bounds = {
-            width: optWidth || this.canvas.width,
-            height: optHeight || this.canvas.height
+            width: (optWidth ?? this.canvas.width) / internalScale,
+            height: (optHeight ?? this.canvas.height) / internalScale,
         }
         this.objects = [];
         this.cameraPosition = {
