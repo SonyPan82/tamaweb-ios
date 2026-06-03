@@ -105,7 +105,7 @@ class Pet extends Object2d {
                     return;
                 }
 
-                overlay.y = 96 + this.additionalY + (App.currentScene.shadowOffset || 0) + (this.shadowOffset || 0);
+                overlay.y = App.constants.GAME_HEIGHT + this.additionalY + (App.currentScene.shadowOffset || 0) + (this.shadowOffset || 0);
                 const distanceToCaster = overlay.y - this.y;
                 overlay.scale = 1 - ((distanceToCaster + 4) * 0.01);
             }

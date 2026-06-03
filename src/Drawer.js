@@ -16,7 +16,7 @@ class Drawer {
         this.context.webkitImageSmoothingEnabled = false;
         this.context.imageSmoothingEnabled = false;
 
-        // scale context so all game-space coordinates (0-96) map to the full canvas
+        // scale context so logical game-space coordinates map to the full canvas
         if (internalScale !== 1) this.context.scale(internalScale, internalScale);
 
         this.bounds = {
@@ -210,6 +210,42 @@ class Drawer {
                     // console.log(colorString)
                     context.fillStyle = colorString;
                     context.fillRect(x, y, (object.width || image.width), (object.height || image.height));
+                } else if(object.fit === 'cover') {
+                    const destWidth = object.width || image.width;
+                    const destHeight = object.height || image.height;
+                    const destRatio = destWidth / destHeight;
+                    const imageRatio = image.width / image.height;
+                    const coverZoom = Math.max(1, object.coverZoom ?? 1);
+                    let srcWidth = image.width;
+                    let srcHeight = image.height;
+
+                    if (imageRatio > destRatio) {
+                        srcWidth = image.height * destRatio;
+                    } else {
+                        srcHeight = image.width / destRatio;
+                    }
+
+                    srcWidth /= coverZoom;
+                    srcHeight /= coverZoom;
+
+                    const focusX = clamp(object.focusX ?? 0.5, 0, 1);
+                    const focusY = clamp(object.focusY ?? 0.5, 0, 1);
+                    const maxSourceX = image.width - srcWidth;
+                    const maxSourceY = image.height - srcHeight;
+                    const sourceX = maxSourceX * focusX;
+                    const sourceY = maxSourceY * focusY;
+
+                    context.drawImage(
+                        image,
+                        sourceX,
+                        sourceY,
+                        srcWidth,
+                        srcHeight,
+                        x,
+                        y,
+                        destWidth,
+                        destHeight
+                    );
                 } else {
                     context.drawImage(image, x, y, (object.width || image.width), (object.height || image.height));
                 }

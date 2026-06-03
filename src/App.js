@@ -49,6 +49,7 @@ const App = {
         themeMode: 'light',
         backgroundPattern: 'resources/img/ui/bg_pattern_01.png',
         notifications: false,
+        notificationPlants: true,
         automaticAging: true,
         sleepingHoursOffset: 0,
         classicMainMenuUI: false,
@@ -62,10 +63,18 @@ const App = {
         season: 'auto',
     },
     constants: {
+        GAME_WIDTH: 96,
+        GAME_HEIGHT: 96,
         ONE_HOUR: 1000 * 60 * 60,
         ONE_MINUTE: 1000 * 60,
         ONE_SECOND: 1000,
         AUTO_SAVE_INTERVAL_SECS: 6,
+        NOTIFICATION_ID_HUNGER: 41001,
+        NOTIFICATION_ID_DANGER: 41002,
+        NOTIFICATION_ID_BIRTHDAY: 41003,
+        NOTIFICATION_ID_PLANT_WATER: 41004,
+        NOTIFICATION_ID_PLANT_DEAD: 41005,
+        NOTIFICATION_ID_DEATH: 41006,
         FOOD_SPRITESHEET: 'resources/img/item/foods_on.png',
         FOOD_SPRITESHEET_DIMENSIONS: {
             cellNumber: 1,
@@ -191,6 +200,10 @@ const App = {
     },
     async init () {
         App.isNativeApp = location.protocol === 'capacitor:' || !!window.Capacitor;
+        document.documentElement.style.setProperty(
+            '--game-aspect-ratio',
+            `${App.constants.GAME_WIDTH} / ${App.constants.GAME_HEIGHT}`
+        );
 
         // window load events
         this.registerLoadEvents();
@@ -201,13 +214,26 @@ const App = {
 
         // init
         this.initSound();
-        // Scale canvas internal resolution to fill the device screen natively (integer scale for crisp pixels)
+        // Scale canvas for display and retina rendering while keeping logical game-space fixed.
         const _gameCanvas = document.querySelector('.graphics-canvas');
-        App.CANVAS_INTERNAL_SCALE = window.innerWidth <= 768
-            ? Math.max(2, Math.floor(window.innerWidth / 96))
+        const isMobileViewport = window.innerWidth <= 768;
+        const mobileReservedHeight = isMobileViewport ? 140 : 0;
+        const displayScale = isMobileViewport
+            ? Math.max(
+                2,
+                Math.floor(
+                    Math.min(
+                        window.innerWidth / App.constants.GAME_WIDTH,
+                        (window.innerHeight - mobileReservedHeight) / App.constants.GAME_HEIGHT,
+                    )
+                )
+            )
             : 2;
-        _gameCanvas.width  = 96 * App.CANVAS_INTERNAL_SCALE;
-        _gameCanvas.height = 96 * App.CANVAS_INTERNAL_SCALE;
+        const devicePixelRatioScale = Math.max(1, Math.ceil(window.devicePixelRatio || 1));
+        App.CANVAS_DISPLAY_SCALE = displayScale;
+        App.CANVAS_INTERNAL_SCALE = displayScale * devicePixelRatioScale;
+        _gameCanvas.width = App.constants.GAME_WIDTH * App.CANVAS_INTERNAL_SCALE;
+        _gameCanvas.height = App.constants.GAME_HEIGHT * App.CANVAS_INTERNAL_SCALE;
         App.drawer = new Drawer(_gameCanvas, undefined, undefined, App.CANVAS_INTERNAL_SCALE);
         Object2d.setDrawer(App.drawer);
 
@@ -281,7 +307,8 @@ const App = {
         App.background = new Object2d({
             image: null,
             x: 0, y: 0, 
-            width: 96, height: 96, 
+            width: App.constants.GAME_WIDTH,
+            height: App.constants.GAME_HEIGHT,
             z: App.constants.BACKGROUND_Z,
             noPreload: Boolean(App.mods.length),
             static: true,
@@ -382,6 +409,10 @@ const App = {
         App.pet = App.createActivePet(App.petDefinition, {
             state: '',
         });
+
+        if(App.settings.notifications && App.canUseNativeLocalNotifications()){
+            App.cancelPetNotifications();
+        }
 
         if(!loadedData.pet || !Object.keys(loadedData.pet).length) { // first time
             setTimeout(() => {
@@ -578,6 +609,23 @@ const App = {
                 App.isStoragePersistent = persistent;
             });
         }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!App.canUseNativeLocalNotifications()) return;
+
+            if (document.hidden) {
+                App.save(true);
+                App.schedulePetNotifications();
+            } else {
+                App.cancelPetNotifications();
+            }
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (!App.canUseNativeLocalNotifications()) return;
+            App.save(true);
+            App.schedulePetNotifications();
+        });
     },
     getBackgroundThemeColor: function(backgroundTheme = 'orange', themeMode = 'light'){
         const themeColors = {
@@ -673,9 +721,10 @@ const App = {
             this.settings.displayShell = false;
             // canvas fills screen natively — no transform needed
             this.settings.screenSize = 1;
-            const _sz = `${App.drawer.canvas.width}px`;
-            graphicsWrapper.style.maxWidth = _sz;
-            graphicsWrapper.style.height = _sz;
+            const wrapperWidth = `${App.constants.GAME_WIDTH * (App.CANVAS_DISPLAY_SCALE || 1)}px`;
+            const wrapperHeight = `${App.constants.GAME_HEIGHT * (App.CANVAS_DISPLAY_SCALE || 1)}px`;
+            graphicsWrapper.style.maxWidth = wrapperWidth;
+            graphicsWrapper.style.height = wrapperHeight;
         }
         graphicsWrapper.style.transform = `scale(${this.settings.screenSize})`;
         document.querySelector('.dom-shell').style.transform = `scale(${this.settings.screenSize + this.settings.shellAdditionalSize})`;
@@ -1218,7 +1267,8 @@ const App = {
     scene: {
         home: new Scene({
             image: 'resources/img/background/house/02.png',
-            petX: '50%', petY: '100%',
+            petX: '50%', petY: '93%',
+            backgroundFocusY: 0.28,
             onLoad: () => {
                 App.drawer.selectObjects('poop').forEach(p => p.absHidden = false);
                 App.pet.staticShadow = false;
@@ -1253,8 +1303,9 @@ const App = {
         }),
         kitchen: new Scene({
             image: 'resources/img/background/house/kitchen_03.png',
-            foodsX: '50%', foodsY: 44,
-            petX: '75%', petY: '81%',
+            foodsX: '50%', foodsY: 56,
+            petX: '69%', petY: '76%',
+            backgroundFocusY: 0.4,
             noShadows: true,
             onLoad: () => {
                 App.pet.staticShadow = false;
@@ -1291,6 +1342,8 @@ const App = {
         }),
         bathroom: new Scene({
             image: 'resources/img/background/house/bathroom_01.png',
+            petY: '90%',
+            backgroundFocusY: 0.42,
         }),
         hospitalExterior: new Scene({
             image: 'resources/img/background/outside/hospital_01.png',
@@ -1311,6 +1364,8 @@ const App = {
         }),
         parentsHome: new Scene({
             image: 'resources/img/background/house/parents_house_01.png',
+            petY: '90%',
+            backgroundFocusY: 0.3,
             onLoad: () => {
                 let parentDefs = App.petDefinition.getParents();
                 // this.parents = parentDefs.map(parent => {
@@ -1320,7 +1375,7 @@ const App = {
                 // });
 
                 this.parent = new Pet(randomFromArray(parentDefs), {
-                    y: 65,
+                    y: 79,
                     z: 4
                 });
             },
@@ -1390,7 +1445,8 @@ const App = {
         }),
         garden: new Scene({
             image: 'resources/img/background/outside/garden_01.png',
-            petY: '95%',
+            petY: '89%',
+            backgroundFocusY: 0.36,
             shadowOffset: -5,
             onLoad: (args) => {
                 App.pet.staticShadow = false;
@@ -1399,7 +1455,7 @@ const App = {
                     App.temp.petBowlObject = new Object2d({
                         img: 'resources/img/misc/pet_bowl_01.png',
                         x: '20%',
-                        y: '67%',
+                        y: '73%',
                         width: 22, height: 22,
                         onLateDraw: (me) => {
                             App.pet.setLocalZBasedOnSelf(me);
@@ -1414,7 +1470,7 @@ const App = {
                                 cellNumber: App.animals.treat + App.animals.treatBiteCount,
                             },
                             x: App.temp.petBowlObject.x,
-                            y: '63%',
+                            y: '69%',
                             onLateDraw: (me) => {
                                 me.z = App.temp.petBowlObject.z;
                                 me.localZ = App.temp.petBowlObject.localZ + 0.001;
@@ -1435,7 +1491,7 @@ const App = {
                     App.temp.digSpotObject = new Object2d({
                         img: 'resources/img/misc/dig_spot_01.png',
                         x: '20%',
-                        y: '84%',
+                        y: '90%',
                         z: App.pet.z + 1,
                         spritesheet: {
                             cellNumber: 1,
@@ -1487,8 +1543,9 @@ const App = {
         }),
         garden_inner: new Scene({
             image: 'resources/img/background/outside/garden_inner_01.png',
-            petY: '55%',
-            animalMinY: 55,
+            petY: '63%',
+            animalMinY: 63,
+            backgroundFocusY: 0.34,
             shadowOffset: -5,
             onLoad: () => {
                 App.handleGardenPlantsSpawn(true);
@@ -1629,6 +1686,9 @@ const App = {
         if(scene.foodsX) App.foods.x = scene.foodsX;
         if(scene.foodsY) App.foods.y = scene.foodsY;
         App.background.setImg(scene.image, true);
+        App.background.fit = scene.backgroundFit;
+        App.background.focusX = scene.backgroundFocusX ?? 0.5;
+        App.background.focusY = scene.backgroundFocusY ?? 0.5;
 
         if(scene.onLoad){
             scene.onLoad(onLoadArg);
@@ -2943,6 +3003,19 @@ const App = {
                         return true;
                     }
                 })),
+                {
+                    _mount: (btn) => {
+                        const hasNew = App.definitions.background_pattern.some((entry) => {
+                            const isUnlocked = entry.unlockKey ? App.getRecord(entry.unlockKey) : true;
+                            return entry.isNew && isUnlocked;
+                        });
+                        btn.innerHTML = `pattern ${hasNew ? App.getBadge('new!') : ''}`;
+                    },
+                    onclick: () => {
+                        App.handlers.open_background_pattern_list();
+                        return true;
+                    }
+                },
             ];
 
             const settings = App.displayList([
@@ -2995,27 +3068,6 @@ const App = {
                     }
                 },
                 {
-                    name: `appearance`,
-                    onclick: () => {
-                        return App.displayList(appearanceOptions);
-                    }
-                },
-                {
-                    name: `
-                        ${App.getIcon('floppy-disk')} 
-                        <span class="flex flex-dir-col pointer-events-none">
-                            <span>Manual Save</span>
-                            <small style="font-size: x-small">auto-saves every ${App.constants.AUTO_SAVE_INTERVAL_SECS} secs</small> 
-                        </span>
-                        `,
-                    onclick: (me) => {
-                        App.save();
-                        me.disabled = true;
-                        me.querySelector('span').textContent = 'Saved!';
-                        return true;
-                    }
-                },
-                {
                     _ignore: !App.deferredInstallPrompt,
                     name: 'install app',
                     onclick: () => {
@@ -3024,29 +3076,24 @@ const App = {
                     },
                 },
                 {
-                    _ignore: true || !window?.Notification || !App.isTester(), // unused
-                    _mount: (e) => e.innerHTML = `notifications: <i>${App.settings.notifications ? 'on' : 'off'}</i>`,
-                    name: `notifications`,
-                    onclick: (btn) => {
-                        if(App.settings.notifications) {
-                            App.settings.notifications = false;
-                            btn._mount();
-                        } else {
-                            Notification.requestPermission().then((result) => {
-                                if (result === "granted") {
-                                  App.settings.notifications = true;
-                                }
-                                btn._mount();
-                            });
-                        }
-
-                        return true;
-                    },
-                },
-                {
                     name: `save management`,
                     onclick: () => {
                         return App.displayList([
+                            {
+                                name: `
+                                    ${App.getIcon('floppy-disk')} 
+                                    <span class="flex flex-dir-col pointer-events-none">
+                                        <span>Manual Save</span>
+                                        <small style="font-size: x-small">auto-saves every ${App.constants.AUTO_SAVE_INTERVAL_SECS} secs</small> 
+                                    </span>
+                                `,
+                                onclick: (me) => {
+                                    App.save();
+                                    me.disabled = true;
+                                    me.querySelector('span').textContent = 'Saved!';
+                                    return true;
+                                }
+                            },
                             {
                                 name: `<i class="fa-solid fa-download icon"></i> <label class="custom-file-upload"><input id="save-file" type="file"></input>Import</label>`,
                                 _mount: (element) => {
@@ -3420,16 +3467,32 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (btn) => {
-                                    const hasNew = App.definitions.background_pattern.some((entry) => {
-                                        const isUnlocked = entry.unlockKey ? App.getRecord(entry.unlockKey) : true;
-                                        return entry.isNew && isUnlocked;
-                                    });
-                                    btn.innerHTML = `back pattern ${hasNew ? App.getBadge('new!') : ''}`
-                                },
+                                name: `appearance`,
                                 onclick: () => {
-                                    App.handlers.open_background_pattern_list();
-                                    return true;
+                                    return App.displayList(appearanceOptions);
+                                }
+                            },
+                            {
+                                _ignore: !App.canUseNativeLocalNotifications(),
+                                _mount: (e) => e.innerHTML = `notifications iphone: <i>${App.settings.notifications ? 'active' : 'inactive'}</i>`,
+                                onclick: () => {
+                                    return App.displayList([
+                                        {
+                                            _mount: (e) => e.innerHTML = `systeme: <i>${App.settings.notifications ? 'active' : 'inactive'}</i>`,
+                                            onclick: (btn) => App.toggleNativeNotifications(btn),
+                                        },
+                                        {
+                                            _ignore: !App.settings.notifications || !App.getNativeLocalNotifications(),
+                                            _mount: (e) => e.innerHTML = `alertes plantes: <i>${App.settings.notificationPlants ? 'on' : 'off'}</i>`,
+                                            onclick: async (item) => {
+                                                App.settings.notificationPlants = !App.settings.notificationPlants;
+                                                App.save();
+                                                await App.schedulePetNotifications();
+                                                item._mount();
+                                                return true;
+                                            }
+                                        },
+                                    ], null, 'Notifications');
                                 }
                             },
                             {
@@ -8237,6 +8300,552 @@ const App = {
           icon: `android-icon-48x48.png`,
         }
         new Notification(title, options);
+    },
+    getIosNativeLocalNotifications: function(){
+        if(!App.isNativeApp) return null;
+        if(App.temp.iosNativeLocalNotifications) return App.temp.iosNativeLocalNotifications;
+
+        const handler = window.webkit?.messageHandlers?.tamaNativeNotifications;
+        if(!handler?.postMessage) return null;
+
+        let nextRequestId = 1;
+        const pending = {};
+        const invoke = (action, payload = {}) => new Promise((resolve, reject) => {
+            const requestId = nextRequestId++;
+            pending[requestId] = { resolve, reject };
+            handler.postMessage({
+                action,
+                requestId,
+                payload,
+            });
+        });
+
+        const bridge = {
+            checkPermissions: () => invoke('checkPermissions'),
+            requestPermissions: () => invoke('requestPermissions'),
+            cancel: ({ notifications = [] } = {}) => invoke('cancel', {
+                notifications: notifications
+                    .map((notification) => ({ id: Number(notification?.id) || 0 }))
+                    .filter((notification) => notification.id > 0)
+            }),
+            removeAllDeliveredNotifications: () => invoke('removeAllDeliveredNotifications'),
+            schedule: ({ notifications = [] } = {}) => invoke('schedule', {
+                notifications: notifications
+                    .map((notification) => {
+                        const at = notification?.schedule?.at;
+                        const timestamp = at instanceof Date ? at.getTime() : Number(new Date(at).getTime());
+                        return {
+                            id: Number(notification?.id) || 0,
+                            title: String(notification?.title || ''),
+                            body: String(notification?.body || ''),
+                            threadIdentifier: notification?.threadIdentifier ? String(notification.threadIdentifier) : '',
+                            at: Number.isFinite(timestamp) ? timestamp : 0,
+                        };
+                    })
+                    .filter((notification) => notification.id > 0 && notification.at > 0)
+            }),
+            _resolve: (requestId, payload) => {
+                const callback = pending[requestId];
+                if(!callback) return;
+                delete pending[requestId];
+                callback.resolve(payload);
+            },
+            _reject: (requestId, message) => {
+                const callback = pending[requestId];
+                if(!callback) return;
+                delete pending[requestId];
+                callback.reject(new Error(message || 'Native notification bridge error'));
+            }
+        };
+
+        window.TamaNativeNotifications = bridge;
+        window.tamaNativeNotifications = bridge;
+        App.temp.iosNativeLocalNotifications = bridge;
+        return bridge;
+    },
+    getNativeLocalNotifications: function(){
+        if(App.isNativeApp){
+            return (
+                App.getIosNativeLocalNotifications()
+                || window.TamaNativeNotifications
+                || window.tamaNativeNotifications
+                || null
+            );
+        }
+
+        return (
+            window.Capacitor?.Plugins?.LocalNotifications
+            || window.capacitorLocalNotifications?.LocalNotifications
+            || null
+        );
+    },
+    canUseNativeLocalNotifications: function(){
+        return App.isNativeApp && !!App.getNativeLocalNotifications();
+    },
+    getMaxDeathTickForLifeStage: function(stats = App.pet?.stats, lifeStage = App.petDefinition?.lifeStage){
+        if(!stats) return 0;
+
+        switch(lifeStage){
+            case PetDefinition.LIFE_STAGE.baby:
+                return stats.baby_max_death_tick;
+            case PetDefinition.LIFE_STAGE.child:
+                return stats.child_max_death_tick;
+            case PetDefinition.LIFE_STAGE.teen:
+                return stats.teen_max_death_tick;
+            default:
+                return stats.max_death_tick;
+        }
+    },
+    getPetNotificationMoments: function(maxSeconds = App.constants.MAX_OFFLINE_PROGRESSION_SECS){
+        if(!App.pet || !App.petDefinition || App.pet.stats.is_dead || App.pet.stats.is_egg){
+            return {};
+        }
+
+        const stats = JSON.parse(JSON.stringify(App.pet.stats));
+        const lifeStage = App.petDefinition.lifeStage;
+        const hasTrait = (traitName) => App.petDefinition.hasTrait?.(traitName);
+        const report = {};
+        const maxDeathTick = App.getMaxDeathTickForLifeStage(stats, lifeStage);
+        let simulatedTime = Date.now();
+
+        for(let second = 1; second <= maxSeconds; second++){
+            const hour = new Date(simulatedTime).getHours();
+            let depletionMult = 0.25;
+            let offlineAndIsNight = false;
+
+            if(App.isSleepHour(hour)){
+                offlineAndIsNight = true;
+                depletionMult = 0.05;
+            }
+
+            switch(lifeStage){
+                case PetDefinition.LIFE_STAGE.baby: depletionMult *= 1.65; break;
+                case PetDefinition.LIFE_STAGE.child: depletionMult *= 1.46; break;
+                case PetDefinition.LIFE_STAGE.teen: depletionMult *= 1.3; break;
+            }
+
+            if(stats.is_at_parents){
+                if((hour < App.constants.PARENT_DAYCARE_START || hour >= App.constants.PARENT_DAYCARE_END)){
+                    stats.is_at_parents = false;
+                }
+            }
+            if(!offlineAndIsNight && stats.is_at_parents) depletionMult = -0.1;
+            if(stats.is_at_vacation) depletionMult = -0.1;
+
+            let hungerDepletionRate = stats.hunger_depletion_rate * depletionMult;
+            if(hasTrait('lightEater')) hungerDepletionRate *= 0.5;
+            if(hasTrait('voraciousHunger')) hungerDepletionRate *= 1.5;
+
+            let sleepDepletionRate = stats.sleep_depletion_rate * depletionMult;
+            if(hasTrait('deepSleeper')) sleepDepletionRate *= 0.5;
+            if(hasTrait('restless')) sleepDepletionRate *= 1.5;
+            sleepDepletionRate /= 2;
+
+            let funDepletionRate = stats.fun_depletion_rate * depletionMult;
+            if(hasTrait('chill')) funDepletionRate *= 0.5;
+            if(hasTrait('playBurnout')) funDepletionRate *= 1.5;
+
+            let bladderDepletionRate = stats.bladder_depletion_rate * depletionMult;
+            if(hasTrait('ironBladder')) bladderDepletionRate *= 0.5;
+            if(hasTrait('tinyTank')) bladderDepletionRate *= 1.5;
+
+            let healthDepletionRate = stats.health_depletion_rate * depletionMult;
+            if(hasTrait('germGuardian')) healthDepletionRate *= 0.5;
+
+            let cleanlinessDepletionRate = stats.cleanliness_depletion_rate * depletionMult;
+            if(hasTrait('selfCleaning')) cleanlinessDepletionRate *= 0.5;
+            if(hasTrait('dustMagnet')) cleanlinessDepletionRate *= 1.5;
+
+            if(stats.is_sleeping || offlineAndIsNight){
+                let sleepAdditionalDepletionMult = 1;
+                if(offlineAndIsNight) sleepAdditionalDepletionMult = 2;
+                sleepDepletionRate = -stats.sleep_replenish_rate * sleepAdditionalDepletionMult;
+            }
+
+            stats.current_hunger = clamp(stats.current_hunger, 0, stats.max_hunger);
+            stats.current_sleep = clamp(stats.current_sleep, 0, stats.max_sleep);
+            stats.current_fun = clamp(stats.current_fun, 0, stats.max_fun);
+            stats.current_bladder = clamp(stats.current_bladder, 0, stats.max_bladder);
+            stats.current_health = clamp(stats.current_health, 0, stats.max_health);
+            stats.current_cleanliness = clamp(stats.current_cleanliness, 0, stats.max_cleanliness);
+
+            stats.current_hunger -= hungerDepletionRate;
+            if(stats.current_hunger <= 0){
+                stats.current_hunger = 0;
+                if(!report.hungerAt) report.hungerAt = simulatedTime + 1000;
+            }
+
+            stats.current_sleep -= sleepDepletionRate;
+            if(stats.current_sleep <= 0){
+                stats.current_sleep = 0;
+                stats.is_sleeping = true;
+            }
+
+            stats.current_fun -= funDepletionRate;
+            if(stats.current_fun <= 0) stats.current_fun = 0;
+
+            stats.current_bladder -= bladderDepletionRate;
+            if(stats.current_bladder <= 0){
+                stats.current_bladder = stats.max_bladder;
+                if(!stats.is_potty_trained){
+                    stats.has_poop_out = !stats.has_poop_out ? 1 : stats.has_poop_out + 1;
+                }
+            }
+
+            stats.current_cleanliness -= cleanlinessDepletionRate;
+            if(stats.current_cleanliness <= 0) stats.current_cleanliness = 0;
+
+            if(stats.has_poop_out || stats.current_cleanliness <= 25){
+                stats.current_health -= healthDepletionRate * stats.health_depletion_mult;
+                stats.current_cleanliness -= cleanlinessDepletionRate * stats.cleanliness_depletion_mult;
+            }
+            if(stats.current_health <= 0) stats.current_health = 0;
+
+            if(
+                stats.current_health <= 0 &&
+                stats.current_cleanliness <= 0 &&
+                stats.current_fun <= 0 &&
+                stats.current_hunger <= 0 &&
+                !stats.is_ghost
+            ) stats.current_death_tick -= stats.death_tick_rate;
+            else stats.current_death_tick = maxDeathTick;
+
+            if(stats.current_death_tick <= maxDeathTick / 2 && !report.dangerAt){
+                report.dangerAt = simulatedTime + 1000;
+            }
+            if(stats.current_death_tick <= 0){
+                report.deathAt = simulatedTime + 1000;
+                break;
+            }
+
+            simulatedTime += 1000;
+        }
+
+        const nextBirthday = App.settings.automaticAging
+            ? App.petDefinition.getNextAutomaticBirthdayDate()
+            : App.petDefinition.getNextBirthdayDate();
+        if(nextBirthday?.valueOf && App.petDefinition.lifeStage < PetDefinition.LIFE_STAGE.elder){
+            report.birthdayAt = nextBirthday.valueOf();
+        }
+
+        return report;
+    },
+    getPlantNotificationMoments: function(){
+        if(!App.plants?.length) return {};
+
+        const report = {};
+        const now = Date.now();
+
+        App.plants.forEach((plantData) => {
+            const plant = plantData instanceof Plant ? plantData : new Plant(plantData);
+            const { wateredDuration, deathDuration } = plant.getStatDurations();
+            if(plant.age === Plant.AGE.dead){
+                return;
+            }
+
+            let simulatedLastWatered = plant.lastWatered;
+            if(App.isRainWeatherActiveAt(now)){
+                simulatedLastWatered = Math.max(simulatedLastWatered, now);
+            }
+
+            for(let i = 0; i < 48; i++){
+                const needWaterAt = simulatedLastWatered + wateredDuration;
+                const deadAt = needWaterAt + deathDuration;
+                const nextRainBeforeWater = App.getNextRainWeatherTime(now + App.constants.ONE_HOUR, needWaterAt);
+
+                if(nextRainBeforeWater != null && nextRainBeforeWater <= needWaterAt){
+                    simulatedLastWatered = nextRainBeforeWater;
+                    continue;
+                }
+
+                if(report.waterAt == null || needWaterAt < report.waterAt){
+                    report.waterAt = needWaterAt;
+                }
+
+                const nextRainBeforeDeath = App.getNextRainWeatherTime(
+                    Math.max(now + App.constants.ONE_HOUR, needWaterAt),
+                    deadAt
+                );
+
+                if(nextRainBeforeDeath != null && nextRainBeforeDeath <= deadAt){
+                    simulatedLastWatered = nextRainBeforeDeath;
+                    continue;
+                }
+
+                if(report.deadAt == null || deadAt < report.deadAt){
+                    report.deadAt = deadAt;
+                }
+                break;
+            }
+        });
+
+        return report;
+    },
+    isDuringChristmasAt: function(timestamp){
+        const date = moment(timestamp);
+        return date.isBetween(
+            moment(App.constants.CHRISTMAS_TIME.start, 'MM-DD'),
+            moment(App.constants.CHRISTMAS_TIME.end, 'MM-DD'),
+            null, '[]'
+        );
+    },
+    isChristmasDayAt: function(timestamp){
+        return moment(timestamp).isSame(
+            moment(App.constants.CHRISTMAS_TIME.absDay, 'MM-DD'),
+            'day'
+        );
+    },
+    getWeatherSnapshotAt: function(timestamp){
+        const date = new Date(timestamp);
+        const hour = App.clampWithin24HourFormat(date.getHours() + App.settings.sleepingHoursOffset);
+        const season = App.getSeason(moment(timestamp));
+        let weatherEffectChance = random(3, 10, date.getDate());
+        if(App.isDuringChristmasAt(timestamp)) weatherEffectChance += 25;
+        if(App.isChristmasDayAt(timestamp)) weatherEffectChance += 100;
+
+        pRandom.save();
+        const seed = hour + date.getDate() + App.userId;
+        pRandom.seed = seed;
+
+        let weatherEffect = 'rain';
+        switch(season){
+            case "spring": break;
+            case "summer": break;
+            case "autumn":
+                weatherEffectChance += 5;
+                weatherEffect = pRandomFromArray(['snow', 'rain', 'rain', 'rain']);
+                break;
+            case "winter":
+                weatherEffectChance += 15;
+                weatherEffect = 'snow';
+                break;
+        }
+
+        const active = pRandom.getPercent(weatherEffectChance);
+        pRandom.load();
+
+        return {
+            active,
+            type: weatherEffect,
+        };
+    },
+    isRainWeatherActiveAt: function(timestamp){
+        const weather = App.getWeatherSnapshotAt(timestamp);
+        return weather.active && weather.type === 'rain';
+    },
+    getNextRainWeatherTime: function(fromTime, toTime){
+        if(fromTime == null || toTime == null || fromTime > toTime){
+            return null;
+        }
+
+        let cursor = new Date(fromTime);
+        cursor.setMinutes(0, 0, 0);
+        if(cursor.getTime() < fromTime){
+            cursor = new Date(cursor.getTime() + App.constants.ONE_HOUR);
+        }
+
+        for(let i = 0; i < 24 * 14 && cursor.getTime() <= toTime; i++){
+            const candidateTime = cursor.getTime();
+            if(App.isRainWeatherActiveAt(candidateTime)){
+                return candidateTime;
+            }
+            cursor = new Date(candidateTime + App.constants.ONE_HOUR);
+        }
+
+        return null;
+    },
+    cancelPetNotifications: async function(){
+        const LocalNotifications = App.getNativeLocalNotifications();
+        if(!LocalNotifications) return false;
+
+        try {
+            await LocalNotifications.cancel({
+                notifications: [
+                    { id: App.constants.NOTIFICATION_ID_HUNGER },
+                    { id: App.constants.NOTIFICATION_ID_DANGER },
+                    { id: App.constants.NOTIFICATION_ID_BIRTHDAY },
+                    { id: App.constants.NOTIFICATION_ID_PLANT_WATER },
+                    { id: App.constants.NOTIFICATION_ID_PLANT_DEAD },
+                    { id: App.constants.NOTIFICATION_ID_DEATH },
+                ]
+            });
+        } catch(e) {
+            console.warn('Unable to cancel pending notifications', e);
+        }
+
+        try {
+            await LocalNotifications.removeAllDeliveredNotifications();
+        } catch(e) {
+            console.warn('Unable to clear delivered notifications', e);
+        }
+
+        return true;
+    },
+    ensureNativeNotificationPermission: async function(interactive){
+        const LocalNotifications = App.getNativeLocalNotifications();
+        if(!LocalNotifications){
+            return {
+                granted: false,
+                state: 'unavailable',
+            };
+        }
+
+        try {
+            let permission = await LocalNotifications.checkPermissions();
+            if(permission.display === 'granted'){
+                return {
+                    granted: true,
+                    state: 'granted',
+                };
+            }
+            if(!interactive){
+                return {
+                    granted: false,
+                    state: permission.display || 'unknown',
+                };
+            }
+
+            permission = await LocalNotifications.requestPermissions();
+            return {
+                granted: permission.display === 'granted',
+                state: permission.display || 'unknown',
+            };
+        } catch(e) {
+            console.warn('Unable to check notification permission', e);
+            return {
+                granted: false,
+                state: 'error',
+                error: e?.message || `${e}`,
+            };
+        }
+    },
+    schedulePetNotifications: async function(){
+        if(!App.settings.notifications || !App.canUseNativeLocalNotifications()){
+            return false;
+        }
+
+        const permission = await App.ensureNativeNotificationPermission(false);
+        if(!permission.granted) return false;
+
+        await App.cancelPetNotifications();
+
+        const moments = App.getPetNotificationMoments();
+        const plantMoments = App.getPlantNotificationMoments();
+        const petName = App.petDefinition?.name || 'Ton Tamagotchi';
+        const notifications = [];
+        const now = Date.now();
+        const normalizeFutureTime = (time) => Math.max(time, now + App.constants.ONE_MINUTE);
+
+        if(moments.hungerAt && moments.hungerAt > now){
+            notifications.push({
+                id: App.constants.NOTIFICATION_ID_HUNGER,
+                title: 'Tamaweb',
+                body: `${petName} a tres faim.`,
+                schedule: { at: new Date(moments.hungerAt) },
+                threadIdentifier: 'pet-status',
+            });
+        }
+
+        if(moments.dangerAt && moments.dangerAt > now){
+            notifications.push({
+                id: App.constants.NOTIFICATION_ID_DANGER,
+                title: 'Tamaweb',
+                body: `${petName} est en danger critique.`,
+                schedule: { at: new Date(moments.dangerAt) },
+                threadIdentifier: 'pet-status',
+            });
+        }
+
+        if(moments.deathAt && moments.deathAt > now){
+            notifications.push({
+                id: App.constants.NOTIFICATION_ID_DEATH,
+                title: 'Tamaweb',
+                body: `${petName} est mort.`,
+                schedule: { at: new Date(moments.deathAt) },
+                threadIdentifier: 'pet-status',
+            });
+        }
+
+        if(moments.birthdayAt && moments.birthdayAt > now){
+            notifications.push({
+                id: App.constants.NOTIFICATION_ID_BIRTHDAY,
+                title: 'Tamaweb',
+                body: `${petName} peut evoluer.`,
+                schedule: { at: new Date(moments.birthdayAt) },
+                threadIdentifier: 'pet-status',
+            });
+        }
+
+        if(App.settings.notificationPlants && plantMoments.waterAt != null){
+            const waterTime = normalizeFutureTime(plantMoments.waterAt);
+            notifications.push({
+                id: App.constants.NOTIFICATION_ID_PLANT_WATER,
+                title: 'Tamaweb',
+                body: 'Une plante a besoin d eau.',
+                schedule: { at: new Date(waterTime) },
+                threadIdentifier: 'plant-status',
+            });
+        }
+
+        if(App.settings.notificationPlants && plantMoments.deadAt != null){
+            const deadTime = normalizeFutureTime(plantMoments.deadAt);
+            notifications.push({
+                id: App.constants.NOTIFICATION_ID_PLANT_DEAD,
+                title: 'Tamaweb',
+                body: 'Une plante risque de mourir.',
+                schedule: { at: new Date(deadTime) },
+                threadIdentifier: 'plant-status',
+            });
+        }
+
+        if(!notifications.length) return false;
+
+        try {
+            await App.getNativeLocalNotifications().schedule({ notifications });
+            return true;
+        } catch(e) {
+            console.warn('Unable to schedule pet notifications', e);
+            return false;
+        }
+    },
+    toggleNativeNotifications: async function(btn){
+        if(!App.isNativeApp) return false;
+        if(!App.getNativeLocalNotifications()){
+            App.displayPopup('Notifications iPhone indisponibles pour le moment.');
+            return false;
+        }
+
+        if(App.settings.notifications){
+            App.settings.notifications = false;
+            await App.cancelPetNotifications();
+            App.save();
+            btn?._mount?.();
+            App.displayPopup('Notifications desactivees');
+            return true;
+        }
+
+        const permission = await App.ensureNativeNotificationPermission(true);
+        if(!permission.granted){
+            App.settings.notifications = false;
+            btn?._mount?.();
+            if(permission.state === 'denied'){
+                App.displayPopup('Notifications refusees dans iOS. Va dans Reglages > Notifications > Tamaweb.');
+            } else if(permission.state === 'prompt'){
+                App.displayPopup('iOS n a pas encore accorde les notifications.');
+            } else if(permission.state === 'error'){
+                App.displayPopup(`Erreur notifications: ${permission.error}`);
+            } else {
+                App.displayPopup(`Notifications indisponibles: ${permission.state}`);
+            }
+            return false;
+        }
+
+        App.settings.notifications = true;
+        App.save();
+        await App.schedulePetNotifications();
+        btn?._mount?.();
+        App.displayPopup('Notifications activees');
+        return true;
     },
     checkPetStats: function(){
         if(!App.isTester()) return setTimeout(() => App.checkPetStats(), 10000);

@@ -8,21 +8,14 @@
     "sync": "npm run build && npx cap sync ios",
     "open": "npx cap open ios"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/autosam/Tamaweb.git"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/autosam/Tamaweb/issues"
-  },
-  "homepage": "https://github.com/autosam/Tamaweb#readme",
   "dependencies": {
     "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1",
-    "@capacitor/ios": "^8.3.1"
+    "@capacitor/ios": "^8.3.1",
+    "@capacitor/local-notifications": "^8.0.2"
   }
 }

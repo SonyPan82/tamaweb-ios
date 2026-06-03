@@ -138,11 +138,10 @@
                 <i class="fa-solid fa-chevron-left"></i>
             </button>
             <button class="mobile-btn primary"
+                    aria-label="Main button"
                     onclick="App.handlers.shell_button()"
                     ontouchstart="setTimeout(() => App.playSound('resources/sounds/shell_button_down.ogg', true))"
-                    ontouchend="setTimeout(() => App.playSound('resources/sounds/shell_button_up.ogg', true))">
-                <i class="fa-solid fa-house"></i>
-            </button>
+                    ontouchend="setTimeout(() => App.playSound('resources/sounds/shell_button_up.ogg', true))"></button>
             <button class="mobile-btn secondary"
                     onclick="App.handlers.shell_button()"
                     ontouchstart="setTimeout(() => App.playSound('resources/sounds/shell_button_down.ogg', true))"
@@ -151,11 +150,6 @@
             </button>
         </div>
 
-        <button class="mobile-settings-btn"
-                onclick="App.handlers.open_settings()"
-                aria-label="Open settings">
-            <i class="fa-solid fa-gear"></i>
-        </button>
     </div>
 
     <!-- downloading -->
@@ -246,6 +240,8 @@
     <script src="src/libs/profanity-cleaner-0.0.3.js"></script>
     <script src="src/libs/moment.js"></script>
     <script src="src/libs/idb-keyval.js"></script>
+    <script src="vendor/capacitor.js"></script>
+    <script src="vendor/capacitor-local-notifications.js"></script>
     
     <!-- scripts -->
     <script src="src/Version.js"></script>

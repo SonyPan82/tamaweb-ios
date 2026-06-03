@@ -1,34 +1,33 @@
-![Tamaweb](https://img.itch.zone/aW1nLzIwNjE0MTY1LnBuZw==/original/GkKbBT.png)
+# Tamaweb iOS
 
-### Tamaweb is a feature-rich virtual pet game.
+Portage iOS de **Tamaweb** sous forme d'application iPhone, avec intégration native iOS autour du projet d'origine.
 
-A Virtual Pet game project inspired by modern Tamagotchi devices, aiming to bring a pure virtual pet experience to multiple devices. Raise your pet from a baby to an elder, teaching them skills, taking them on adventures, customizing their home and a lot more!
+Ce dépôt correspond à une adaptation iOS du projet web original ; Le but est de proposer une vraie version iPhone avec son intégration native.
 
-### Platforms:
-- Browser
-- Windows
-- Android
-- PWA
+## Crédits
 
-### 🤝 Contributing
-Contributions are welcome! If you find a bug or have an idea for a new feature, feel free to open an issue or submit a pull request.
+Tout le crédit du jeu original revient à son créateur et au projet source :
 
-### 💬 Join Our Community
-Connect with other players, get updates, give suggestions and share your progress on our official Discord server.
+- Projet original : **Tamaweb**
+- Créateur / dépôt d'origine : `https://github.com/autosam/Tamaweb`
 
-[Join the Discord Server](https://tamawebgame.github.io/discord)
+Ce dépôt est uniquement un travail de portage, d'intégration et d'adaptation iOS.
 
-### 📄 License & Terms
-Distributed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) License.
+## Ce que contient ce portage
 
-**For a full breakdown of the terms of use, please see the [Terms of Use](TERMS_OF_USE.md) file.**
+- intégration Capacitor
+- projet Xcode iOS
+- adaptation de l'interface pour iPhone
+- ajustements d'affichage mobile et retina
+- intégration iOS native pour certaines fonctions du portage
+- notifications iPhone natives liées à l'état du Tamagotchi et du jardin
 
-### 🔗 Official Links
-[Official Website](https://tamawebgame.github.io/) • [itch Version](https://samandev.itch.io/tamaweb) • [Official Wiki](https://tamaweb.wiki.gg/) • [Discord](https://tamawebgame.github.io/discord) • [Blog](https://tamawebgame.github.io/blog) • [Instagram](https://www.instagram.com/tamaweb_game/) • [TikTok](https://www.tiktok.com/@samandevgames?_t=8rmMbdc7Vnb&_r=1)
+## Disponibilité
 
-### 📧 Contact
-🌐 https://tamawebgame.github.io
+L'application sera disponible gratuitement sur l'App Store sous le nom de Tamaweb iOS.
 
-✉️ autosam.sm@gmail.com
+## Important
 
-🧑‍💻 Project Link: https://github.com/autosam/Tamaweb
+Si vous cherchez le projet d'origine, il faut se référer au dépôt source de Tamaweb.
+
+Si vous cherchez la version iPhone de ce portage, ce dépôt documente cette adaptation iOS.
