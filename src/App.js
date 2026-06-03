@@ -3159,6 +3159,15 @@ const App = {
                 },
                 {
                     type: 'text',
+                    name: `<small>iOS port by</small>
+                        <br>
+                        <div class="credit-author">
+                            Yohan
+                        </div>
+                    `
+                },
+                {
+                    type: 'text',
                     name: `<small>music/sfx by</small>
                         <br>
                         <div class="credit-author">
@@ -3185,7 +3194,7 @@ const App = {
             };
             const appearanceOptions = [
                 {
-                    _mount: (e) => e.innerHTML = `mode: <i>${App.settings.themeMode === 'dark' ? 'dark' : 'light'}</i>`,
+                    _mount: (e) => e.innerHTML = `${window.t ? window.t('mode') : 'mode'}: <i>${window.t ? window.t(App.settings.themeMode === 'dark' ? 'dark' : 'light') : (App.settings.themeMode === 'dark' ? 'dark' : 'light')}</i>`,
                     onclick: (item) => {
                         App.settings.themeMode = App.settings.themeMode === 'dark' ? 'light' : 'dark';
                         App.applySettings();
@@ -3549,7 +3558,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.automaticAging)} Auto aging: <i>${App.settings.automaticAging ? 'On' : 'Off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.automaticAging)} ${window.t ? window.t('auto aging') : 'auto aging'}: <i>${window.t ? window.t(App.settings.automaticAging ? 'on' : 'off') : (App.settings.automaticAging ? 'on' : 'off')}</i>`,
                                 onclick: (e) => {
                                     if(!App.settings.automaticAging){
                                         App.displayConfirm(`Are you sure? This will make your pets automatically age up after a certain amount of time`, [
@@ -3578,7 +3587,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.season)} Season: <i>${App.settings.season}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.season)} ${window.t ? window.t('season') : 'season'}: <i>${window.t ? window.t(App.settings.season) : App.settings.season}</i>`,
                                 onclick: (e) => {
                                     const possibleOptions = [
                                         'auto',
@@ -3597,7 +3606,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.showWantName)} show want name: <i>${App.settings.showWantName ? 'On' : 'Off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.showWantName)} ${window.t ? window.t('show want name') : 'show want name'}: <i>${window.t ? window.t(App.settings.showWantName ? 'on' : 'off') : (App.settings.showWantName ? 'on' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.showWantName = !App.settings.showWantName;
                                     App.applySettings();
@@ -3606,7 +3615,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.genderedPets)} gendered pets: <i>${App.settings.genderedPets ? 'On' : 'Off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.genderedPets)} ${window.t ? window.t('gendered pets') : 'gendered pets'}: <i>${window.t ? window.t(App.settings.genderedPets ? 'on' : 'off') : (App.settings.genderedPets ? 'on' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.genderedPets = !App.settings.genderedPets;
                                     item._mount(); 
@@ -3618,7 +3627,7 @@ const App = {
                                 ${getStateIcon(App.settings.skillsAffectingEvolution)} 
                                 <div class="overflow-hidden flex">
                                     <div class="marquee">
-                                        skills affecting evolution: <i>${App.settings.skillsAffectingEvolution ? 'On' : 'Off'}</i>
+                                        ${window.t ? window.t('skills affecting evolution') : 'skills affecting evolution'}: <i>${window.t ? window.t(App.settings.skillsAffectingEvolution ? 'on' : 'off') : (App.settings.skillsAffectingEvolution ? 'on' : 'off')}</i>
                                     </div>
                                 </div>
                                 `,
@@ -3644,7 +3653,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `bg music: <i>${App.settings.playMusic ? 'on' : 'off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${window.t ? window.t('bg music') : 'bg music'}: <i>${window.t ? window.t(App.settings.playMusic ? 'on' : 'off') : (App.settings.playMusic ? 'on' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.playMusic = !App.settings.playMusic;
                                     item._mount();
@@ -3660,7 +3669,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `classic menu: <i>${App.settings.classicMainMenuUI ? 'on' : 'off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${window.t ? window.t('classic menu') : 'classic menu'}: <i>${window.t ? window.t(App.settings.classicMainMenuUI ? 'on' : 'off') : (App.settings.classicMainMenuUI ? 'on' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.classicMainMenuUI = !App.settings.classicMainMenuUI;
                                     item._mount();
@@ -3703,7 +3712,7 @@ const App = {
                                 }
                             },
                             {
-                                _ignore: !App.canUseNativeLocalNotifications(),
+                                _ignore: !App.isNativeApp,
                                 _mount: (e) => e.innerHTML = `${window.t ? window.t('notifications iphone') : 'notifications iphone'}: <i>${window.t ? window.t(App.settings.notifications ? 'active' : 'inactive') : (App.settings.notifications ? 'active' : 'inactive')}</i>`,
                                 onclick: () => {
                                     return App.displayList([

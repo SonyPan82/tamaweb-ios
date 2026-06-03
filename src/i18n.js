@@ -3,9 +3,10 @@ const _detectedLang = (navigator.language || navigator.languages?.[0] || 'en').t
 const _defaultLanguage = _detectedLang.startsWith('fr') ? 'fr' : 'en';
 
 window.getCurrentLanguage = function getCurrentLanguage() {
-    if (typeof window.App !== 'undefined' && window.App?.settings?.language) {
-        return window.App.settings.language;
-    }
+    try {
+        const saved = JSON.parse(window.localStorage?.getItem('settings'));
+        if (saved?.language) return saved.language;
+    } catch(e) {}
     return _defaultLanguage;
 };
 
@@ -173,6 +174,28 @@ const FR = {
     'INACTIVE': 'Inactif',
     'ON': 'Activé',
     'OFF': 'Désactivé',
+    'DARK': 'Sombre',
+    'LIGHT': 'Clair',
+    'MODE': 'Mode',
+    'AUTO AGING': 'Vieillissement auto',
+    'SEASON': 'Saison',
+    'AUTO': 'Auto',
+    'SPRING': 'Printemps',
+    'SUMMER': 'Été',
+    'AUTUMN': 'Automne',
+    'WINTER': 'Hiver',
+    'SHOW WANT NAME': 'Afficher les désirs',
+    'GENDERED PETS': 'Animaux genrés',
+    'SKILLS AFFECTING EVOLUTION': 'Compétences influençant l\'évolution',
+    'BG MUSIC': 'Musique fond',
+    'CLASSIC MENU': 'Menu classique',
+    'ABANDON': 'Abandonner',
+    'MOVE OUT': 'Déménager',
+    "FRIEND'S HOME": 'Chez un ami',
+    'JOIN (+$200)': 'Rejoindre (+200$)',
+    'YES ($100)': 'Oui (100$)',
+    'SET NAME/GENDER': 'Nom/genre',
+    'SET NICKNAME': 'Surnom',
     'INSTALL APP': 'Installer l\'app',
     'CREDITS': 'Crédits',
     'RATE!': 'Évaluer !',

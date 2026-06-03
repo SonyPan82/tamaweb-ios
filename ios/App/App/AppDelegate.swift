@@ -4,7 +4,7 @@ import WebKit
 import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, WKScriptMessageHandler {
+class AppDelegate: UIResponder, UIApplicationDelegate, WKScriptMessageHandler, UNUserNotificationCenterDelegate {
 
     var window: UIWindow?
     private let nativeNotificationHandlerName = "tamaNativeNotifications"
@@ -12,11 +12,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, WKScriptMessageHandler {
     private var hasInstalledNativeNotificationBridge = false
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        notificationCenter.delegate = self
         DispatchQueue.main.async {
             self.installNativeNotificationBridgeIfPossible()
         }
         return true
+    }
+
+    // Show notifications even when app is in foreground
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound, .badge])
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -291,10 +296,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, WKScriptMessageHandler {
             let id = dictionary["id"] as? Int,
             let title = dictionary["title"] as? String,
             let body = dictionary["body"] as? String,
-            let timestamp = dictionary["at"] as? Double
+            let atNumber = dictionary["at"] as? NSNumber
         else {
             return nil
         }
+        let timestamp = atNumber.doubleValue
 
         let fireDate = Date(timeIntervalSince1970: timestamp / 1000)
         let timeInterval = fireDate.timeIntervalSinceNow
