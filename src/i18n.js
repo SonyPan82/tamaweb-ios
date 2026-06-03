@@ -3,8 +3,8 @@ const _detectedLang = (navigator.language || navigator.languages?.[0] || 'en').t
 const _defaultLanguage = _detectedLang.startsWith('fr') ? 'fr' : 'en';
 
 window.getCurrentLanguage = function getCurrentLanguage() {
-    if (typeof App !== 'undefined' && App?.settings?.language) {
-        return App.settings.language;
+    if (typeof window.App !== 'undefined' && window.App?.settings?.language) {
+        return window.App.settings.language;
     }
     return _defaultLanguage;
 };
