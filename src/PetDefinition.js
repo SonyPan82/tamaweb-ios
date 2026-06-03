@@ -317,6 +317,7 @@ class PetDefinition {
         is_revived_once: false,
         is_ghost: false,
         last_eaten: [],
+        has_toothache: false,
 
         // skill points
         current_expression: 0,
@@ -423,6 +424,7 @@ class PetDefinition {
                     has_received_school_invite: this.stats.has_received_school_invite,
                     gender: this.stats.gender,
                     is_ghost: this.stats.is_ghost,
+                    has_toothache: this.stats.has_toothache,
                 }
                 return;
             }
@@ -438,6 +440,7 @@ class PetDefinition {
                                 player_friendship: friendDef.stats.player_friendship,
                                 is_player_family: friendDef.stats.is_player_family,
                                 is_ghost: friendDef.stats.is_ghost,
+                                player_sent_letter: friendDef.stats.player_sent_letter,
                             }
                         };
                     })
@@ -510,8 +513,10 @@ class PetDefinition {
         if(!value) value = random(5, 10);
 
         let finalValue = value;
-        if(this.hasTrait('charismatic')) finalValue *= 1.75;
-        if(this.hasTrait('introvert')) finalValue *= 0.4;
+        if(value > 0){
+            if(this.hasTrait('charismatic')) finalValue *= 1.75;
+            if(this.hasTrait('introvert')) finalValue *= 0.4;
+        }
 
         if(!this.stats.player_friendship) this.stats.player_friendship = finalValue;
         else this.stats.player_friendship += finalValue;
@@ -547,7 +552,7 @@ class PetDefinition {
     }
 
     getNextBirthdayDate(){
-        let m = moment(this.lastBirthday);
+        const m = moment(this.lastBirthday);
         switch(this.lifeStage){
             case PetDefinition.LIFE_STAGE.baby:
                 return m.add(App.constants.MANUAL_AGE_HOURS_BABY, 'hours');
@@ -562,16 +567,38 @@ class PetDefinition {
     }
 
     getNextAutomaticBirthdayDate(){
-        let m = moment(this.birthday);
+        const getLifeStageTotalHours = (lifeStage) => {
+            const autoAgeHours = {
+                [PetDefinition.LIFE_STAGE.baby]: App.constants.AUTO_AGE_HOURS_BABY,
+                [PetDefinition.LIFE_STAGE.child]: App.constants.AUTO_AGE_HOURS_CHILD,
+                [PetDefinition.LIFE_STAGE.teen]: App.constants.AUTO_AGE_HOURS_TEEN,
+                [PetDefinition.LIFE_STAGE.adult]: App.constants.AUTO_AGE_HOURS_ADULT
+            };
+
+            const lifeStages = [
+                PetDefinition.LIFE_STAGE.baby,
+                PetDefinition.LIFE_STAGE.child,
+                PetDefinition.LIFE_STAGE.teen,
+                PetDefinition.LIFE_STAGE.adult,
+            ];
+
+            let total = 0;
+            for(const code of lifeStages){
+                const hours = autoAgeHours[code];
+                if(!hours) break;
+                total += hours;
+                if(code === lifeStage) break;
+            }
+            return total;
+        }
+
+        const m = moment(this.birthday);
         switch(this.lifeStage){
             case PetDefinition.LIFE_STAGE.baby:
-                return m.add(App.constants.AUTO_AGE_HOURS_BABY, 'hours');
             case PetDefinition.LIFE_STAGE.child:
-                return m.add(App.constants.AUTO_AGE_HOURS_CHILD, 'hours');
             case PetDefinition.LIFE_STAGE.teen:
-                return m.add(App.constants.AUTO_AGE_HOURS_TEEN, 'hours');
             case PetDefinition.LIFE_STAGE.adult:
-                return m.add(App.constants.AUTO_AGE_HOURS_ADULT, 'hours');
+                return m.add(getLifeStageTotalHours(this.lifeStage), 'hours');
         }
         return false;
     }

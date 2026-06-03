@@ -1,0 +1,61 @@
+name: itch-deploy-main
+
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - gh-pages
+
+jobs:
+  deploy-to-itch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract version from Version.js
+        id: get_version
+        run: |
+          # Find the Version.js file
+          VERSION_FILE=$(find . -name "Version.js" -type f | head -n 1)
+          
+          if [ -z "$VERSION_FILE" ]; then
+            exit 1
+          fi
+          
+          VERSION=$(grep -E "VERSION\s*=\s*['\"][0-9.]+['\"]" "$VERSION_FILE" | sed -E "s/.*['\"]([0-9.]+)['\"].*/\1/")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [ -z "$VERSION" ]; then
+            echo "Could not extract version"
+            exit 1
+          fi
+
+      - name: Create filtered ZIP archive
+        run: |
+          zip -r itch-upload.zip . \
+            -x "*.git*" \
+            -x "*.vscode/*" \
+            -x "*README.md" \
+            -x "*scripts/*" \
+            -x "*blog/*" \
+            -x "*creator/*" \
+            -x "*growth-chart/*"
+  
+      - name: Upload ZIP as downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: itch-upload
+          path: itch-upload.zip
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Setup butler
+        uses: remarkablegames/setup-butler@v3
+
+      - name: Upload to Itch.io via Butler
+        env:
+          BUTLER_API_KEY: ${{ secrets.ITCH_BUTLER_API_KEY }}
+        run: |
+          butler push itch-upload.zip samandev/tamaweb:html5 --userversion ${{ steps.get_version.outputs.version }}
