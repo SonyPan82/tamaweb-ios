@@ -61,6 +61,7 @@ const App = {
         playMusic: true,
         skillsAffectingEvolution: true,
         season: 'auto',
+        language: typeof window.getCurrentLanguage === 'function' ? window.getCurrentLanguage() : 'en',
     },
     constants: {
         GAME_WIDTH: 96,
@@ -1362,7 +1363,7 @@ const App = {
         if(addEvent(`update_26_notice`, () => {
             App.displayList([
                 {
-                    name: `New update is available!<b> <div><small>${VERSION}</small></div> ${App.getBadge('new!')}`,
+                    name: `${window.t ? window.t('New update is available!') : 'New update is available!'}<b> <div><small>${VERSION}</small></div> ${App.getBadge('new!')}`,
                     type: 'text',
                     solid: true,
                     bold: true,
@@ -1372,7 +1373,7 @@ const App = {
                         <img class="update-banner" src="resources/img/ui/update_banner.png"></img>
                         <br>
                         <div>
-                        Check out the new <b>Post Office location</b>, <b>Functional Buttons</b>, <b>Guess The Number mini-game</b>, <b>Toothaches</b> and a lot more!
+                        ${window.t ? window.t('Check out the new') : 'Check out the new'} <b>${window.t ? window.t('Post Office location') : 'Post Office location'}</b>, <b>${window.t ? window.t('Functional Buttons') : 'Functional Buttons'}</b>, <b>${window.t ? window.t('Guess The Number mini-game') : 'Guess The Number mini-game'}</b>, <b>${window.t ? window.t('Toothaches') : 'Toothaches'}</b> ${window.t ? window.t('and a lot more!') : 'and a lot more!'}
                         </div>
                     `,
                     type: 'text',
@@ -1387,7 +1388,7 @@ const App = {
                 }, */
                 {
                     link: App.routes.BLOG,
-                    name: 'see whats new',
+                    name: window.t ? window.t('see whats new') : 'see whats new',
                     class: 'solid primary',
                     onclick: () => {
                         App.sendAnalytics('go_to_blog_whats_new');
@@ -3316,14 +3317,14 @@ const App = {
                             {
                                 name: `<i class="fa-solid fa-copy icon"></i> copy`,
                                 onclick: async () => {
-                                    const loadingPopup = App.displayPopup('loading...');
+                                    const loadingPopup = App.displayPopup(window.t ? window.t('loading...') : 'loading...');
                                     const charCode = await App.getSaveCode();
                                     loadingPopup.close();
-                                    App.displayConfirm(`Here you'll be able to copy your unique save code and continue your playthrough on another device`, [
+                                    App.displayConfirm(window.t ? window.t(`Here you'll be able to copy your unique save code and continue your playthrough on another device`) : `Here you'll be able to copy your unique save code and continue your playthrough on another device`, [
                                         {
                                             name: 'ok',
                                             onclick: () => {
-                                                App.displayConfirm(`After copying the code, open Tamaweb on another device and paste the code in <b>settings > input code</b>`, [
+                                                App.displayConfirm(window.t ? window.t(`After copying the code, open Tamaweb on another device and paste the code in <b>settings > input code</b>`) : `After copying the code, open Tamaweb on another device and paste the code in <b>settings > input code</b>`, [
                                                     {
                                                         name: 'ok',
                                                         onclick: () => {
@@ -3331,9 +3332,9 @@ const App = {
                                                                 if(App.isOnItch) throw 'itch_clipboard';
                                                                 _copyText(charCode);
                                                                 console.log('save code copied', charCode);
-                                                                App.displayPopup('Save code copied!', 1000);
+                                                                App.displayPopup(window.t ? window.t('Save code copied!') : 'Save code copied!', 1000);
                                                             } catch(e) {
-                                                                const prompt = App.displayPrompt(`Copy your save code from the box below:<br><small><i class="fa-solid fa-info-circle"></i> starts with <b>save:</b> and ends with <b>:endsave</b></small>`, [
+                                                                const prompt = App.displayPrompt(`${window.t ? window.t('Copy your save code from the box below:') : 'Copy your save code from the box below:'}<br><small><i class="fa-solid fa-info-circle"></i> ${window.t ? window.t('starts with') : 'starts with'} <b>save:</b> ${window.t ? window.t('and ends with') : 'and ends with'} <b>:endsave</b></small>`, [
                                                                     {
                                                                         name: 'Ok, I copied',
                                                                         class: 'back-btn',
@@ -3668,23 +3669,51 @@ const App = {
                                 }
                             },
                             {
-                                name: `appearance`,
+                                name: window.t ? window.t('appearance') : 'appearance',
                                 onclick: () => {
                                     return App.displayList(appearanceOptions);
                                 }
                             },
                             {
-                                _ignore: !App.canUseNativeLocalNotifications(),
-                                _mount: (e) => e.innerHTML = `notifications iphone: <i>${App.settings.notifications ? 'active' : 'inactive'}</i>`,
+                                _mount: (e) => {
+                                    const languageLabel = App.settings.language === 'fr'
+                                        ? (window.t ? window.t('French') : 'French')
+                                        : 'English';
+                                    e.innerHTML = `${window.t ? window.t('language') : 'language'}: <i>${languageLabel}</i>`;
+                                },
                                 onclick: () => {
                                     return App.displayList([
                                         {
-                                            _mount: (e) => e.innerHTML = `systeme: <i>${App.settings.notifications ? 'active' : 'inactive'}</i>`,
+                                            name: 'English',
+                                            onclick: () => {
+                                                App.settings.language = 'en';
+                                                App.save();
+                                                location.reload();
+                                            }
+                                        },
+                                        {
+                                            name: window.t ? window.t('French') : 'French',
+                                            onclick: () => {
+                                                App.settings.language = 'fr';
+                                                App.save();
+                                                location.reload();
+                                            }
+                                        },
+                                    ], null, window.t ? window.t('language') : 'language');
+                                }
+                            },
+                            {
+                                _ignore: !App.canUseNativeLocalNotifications(),
+                                _mount: (e) => e.innerHTML = `${window.t ? window.t('notifications iphone') : 'notifications iphone'}: <i>${window.t ? window.t(App.settings.notifications ? 'active' : 'inactive') : (App.settings.notifications ? 'active' : 'inactive')}</i>`,
+                                onclick: () => {
+                                    return App.displayList([
+                                        {
+                                            _mount: (e) => e.innerHTML = `${window.t ? window.t('systeme') : 'systeme'}: <i>${window.t ? window.t(App.settings.notifications ? 'active' : 'inactive') : (App.settings.notifications ? 'active' : 'inactive')}</i>`,
                                             onclick: (btn) => App.toggleNativeNotifications(btn),
                                         },
                                         {
                                             _ignore: !App.settings.notifications || !App.getNativeLocalNotifications(),
-                                            _mount: (e) => e.innerHTML = `alertes plantes: <i>${App.settings.notificationPlants ? 'on' : 'off'}</i>`,
+                                            _mount: (e) => e.innerHTML = `${window.t ? window.t('alertes plantes') : 'alertes plantes'}: <i>${window.t ? window.t(App.settings.notificationPlants ? 'on' : 'off') : (App.settings.notificationPlants ? 'on' : 'off')}</i>`,
                                             onclick: async (item) => {
                                                 App.settings.notificationPlants = !App.settings.notificationPlants;
                                                 App.save();
@@ -6531,14 +6560,14 @@ const App = {
                         background.setImg(homeBackground);
                     }
                     if(App.pet.hasMoodlet('bored')){
-                        postText.innerHTML = 'Anyone wanna talk? #bored';
+                        postText.innerHTML = window.t ? window.t('Anyone wanna talk? #bored') : 'Anyone wanna talk? #bored';
                         character.spritesheet.cellNumber = 4;
                         background.setImg(homeBackground);
                     }
                     if(App.pet.hasMoodlet('sick')){
-                        postText.innerHTML = 'Not feeling too good... #tummyache';
+                        postText.innerHTML = window.t ? window.t('Not feeling too good... #tummyache') : 'Not feeling too good... #tummyache';
                         if(App.pet.stats.has_toothache) {
-                            postText.innerHTML = 'Ate way too much snacks... #toothache';
+                            postText.innerHTML = window.t ? window.t('Ate way too much snacks... #toothache') : 'Ate way too much snacks... #toothache';
                         }
                         character.spritesheet.cellNumber = 4;
                         background.setImg(homeBackground);
@@ -9315,7 +9344,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
     const showInstallPrompt = () => {
         App.addEvent(`pwa_install_notice_01`, () => {
-            App.displayConfirm(`Do you want to install <b>Tamaweb</b> as an app?`, [
+            App.displayConfirm(window.t ? window.t(`Do you want to install <b>Tamaweb</b> as an app?`) : `Do you want to install <b>Tamaweb</b> as an app?`, [
                 {
                     name: 'install',
                     onclick: () => {
@@ -9326,7 +9355,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
                     name: 'cancel',
                     class: 'back-btn',
                     onclick: () => {
-                        App.displayPopup(`You can install the game as an app anytime from the <b>settings</b>`)
+                        App.displayPopup(window.t ? window.t(`You can install the game as an app anytime from the <b>settings</b>`) : `You can install the game as an app anytime from the <b>settings</b>`)
                     }
                 },
             ])

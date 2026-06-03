@@ -1,6 +1,17 @@
-// Internationalization — auto-detects device language
-const _lang = (navigator.language || navigator.languages?.[0] || 'en').toLowerCase();
-window._isFrench = _lang.startsWith('fr');
+// Internationalization — auto-detects device language, but can be overridden from settings.
+const _detectedLang = (navigator.language || navigator.languages?.[0] || 'en').toLowerCase();
+const _defaultLanguage = _detectedLang.startsWith('fr') ? 'fr' : 'en';
+
+window.getCurrentLanguage = function getCurrentLanguage() {
+    if (typeof App !== 'undefined' && App?.settings?.language) {
+        return App.settings.language;
+    }
+    return _defaultLanguage;
+};
+
+window._isFrench = function _isFrench() {
+    return window.getCurrentLanguage() === 'fr';
+};
 
 const FR = {
     // ── Boutons génériques ──────────────────────────────────────
@@ -22,6 +33,8 @@ const FR = {
     'SEND': 'Envoyer',
     'INVITE': 'Inviter',
     'INSTALL': 'Installer',
+    'EXPORT': 'Exporter',
+    'COPY': 'Copier',
     'UNINSTALL': 'Désinstaller',
     'TRACK': 'Suivre',
     'START': 'Commencer',
@@ -62,6 +75,7 @@ const FR = {
     'HOMEWORLD GETAWAYS': 'Voyages Homeworld',
     'FORTUNE TELLER': 'Voyante',
     'PARK': 'Parc',
+    'POST OFFICE': 'Poste',
     'RESTAURANT': 'Restaurant',
     'SCHOOL': 'École',
     'BACKYARD': 'Jardin',
@@ -148,6 +162,17 @@ const FR = {
     'BACK COLOR': 'Couleur du fond',
     'SLEEPING HOURS': 'Heures de sommeil',
     'NOTIFICATIONS': 'Notifications',
+    'LANGUAGE': 'Langue',
+    'ENGLISH': 'Anglais',
+    'FRENCH': 'Français',
+    'APPEARANCE': 'Apparence',
+    'NOTIFICATIONS IPHONE': 'Notifications iPhone',
+    'SYSTEME': 'Système',
+    'ALERTES PLANTES': 'Alertes plantes',
+    'ACTIVE': 'Actif',
+    'INACTIVE': 'Inactif',
+    'ON': 'Activé',
+    'OFF': 'Désactivé',
     'INSTALL APP': 'Installer l\'app',
     'CREDITS': 'Crédits',
     'RATE!': 'Évaluer !',
@@ -229,6 +254,26 @@ const FR = {
     // ── Messages ───────────────────────────────────────────────
     'PET': 'Animal',
     'CURRENT WANT': 'Désir actuel',
+    'LOADING...': 'Chargement...',
+    'NEW UPDATE IS AVAILABLE!': 'Une nouvelle mise à jour est disponible !',
+    'CHECK OUT THE NEW': 'Découvre le nouveau',
+    'POST OFFICE LOCATION': 'lieu Poste',
+    'FUNCTIONAL BUTTONS': 'boutons fonctionnels',
+    'GUESS THE NUMBER MINI-GAME': 'mini-jeu Devine le nombre',
+    'TOOTHACHES': 'maux de dents',
+    'AND A LOT MORE!': 'et bien plus encore !',
+    'SEE WHATS NEW': 'voir les nouveautés',
+    'HERE YOU\'LL BE ABLE TO COPY YOUR UNIQUE SAVE CODE AND CONTINUE YOUR PLAYTHROUGH ON ANOTHER DEVICE': 'Ici, tu pourras copier ton code de sauvegarde unique et continuer ta partie sur un autre appareil.',
+    'AFTER COPYING THE CODE, OPEN TAMAWEB ON ANOTHER DEVICE AND PASTE THE CODE IN SETTINGS > INPUT CODE': 'Après avoir copié le code, ouvre Tamaweb sur un autre appareil et colle-le dans Réglages > Saisir un code.',
+    'SAVE CODE COPIED!': 'Code de sauvegarde copié !',
+    'COPY YOUR SAVE CODE FROM THE BOX BELOW:': 'Copie ton code de sauvegarde depuis le champ ci-dessous :',
+    'STARTS WITH': 'commence par',
+    'AND ENDS WITH': 'et se termine par',
+    'DO YOU WANT TO INSTALL TAMAWEB AS AN APP?': 'Veux-tu installer <b>Tamaweb</b> comme application ?',
+    'YOU CAN INSTALL THE GAME AS AN APP ANYTIME FROM THE SETTINGS': 'Tu peux installer le jeu comme application à tout moment depuis les <b>réglages</b>.',
+    'ANYONE WANNA TALK? #BORED': 'Quelqu’un veut discuter ? #ennui',
+    'NOT FEELING TOO GOOD... #TUMMYACHE': 'Je ne me sens pas très bien... #maldeventre',
+    'ATE WAY TOO MUCH SNACKS... #TOOTHACHE': 'J’ai mangé beaucoup trop de snacks... #maldedents',
     'FLAGS': 'Drapeaux',
     'EDIT POSITION': 'Modifier la position',
     'EDIT': 'Modifier',
@@ -254,7 +299,7 @@ const FR = {
  * Translates only the plain-text segments — leaves HTML tags intact.
  */
 window.t = function t(str) {
-    if (!window._isFrench || typeof str !== 'string' || !str) return str;
+    if (!window._isFrench() || typeof str !== 'string' || !str) return str;
 
     // Fast path: full match (common for plain-text names)
     const upper = str.trim().toUpperCase();
