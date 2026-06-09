@@ -2988,6 +2988,64 @@ App.definitions = (() => {
                     "Forecast: Shooting Stars Expected Tonight!",
                     "Skywatchers are in for a treat as dozens of shooting stars light up the skies. Make your wishes ready!",
                 ],
+            ],
+            news_fr: [
+                [
+                    "Derniere minute : le Festival des Tournesols est en pleine floraison !",
+                    "Les petites creatures locales bourdonnent d excitation tandis que les champs de tournesols teintent l horizon d or. Une journee parfaite pour un pique-nique !",
+                ],
+                [
+                    "Heros local : Sparky l ecureuil retrouve sa reserve de glands disparue !",
+                    "Apres une semaine de recherches, Sparky a fièrement annonce avoir retrouve les glands perdus. 'Je savais qu ils etaient dans le pot de fleurs !' a-t-il declare.",
+                ],
+                [
+                    "Meteo : faible risque d averses de guimauves !",
+                    "Les habitants sont invites a garder une tasse de chocolat chaud a portee de main. Les experts annoncent la tempete la plus douce de la saison.",
+                ],
+                [
+                    "Vie locale : M. Moustaches remporte le concours de tartes !",
+                    "Dans un exploit record, M. Moustaches a devore 12 tartes aux fraises. 'Je n arrivais tout simplement pas a m arreter !' a-t-il confie, couvert de miettes.",
+                ],
+                [
+                    "Exclusif : les lucioles offrent un spectacle lumineux chaque soir !",
+                    "Chaque soir cette semaine, les lucioles illumineront le ciel avec des motifs eblouissants. N oublie pas de lever les yeux !",
+                ],
+                [
+                    "Derniere minute : une nouvelle boulangerie ouvre a Prairie Muffin !",
+                    "Les habitants raffolent deja des tartelettes miel-baie et des brioches a la cannelle tout juste sorties du four. Des echantillons gratuits sont proposes toute la semaine !",
+                ],
+                [
+                    "A la une : les canetons font leur premiere nage !",
+                    "Un adorable groupe de canetons a traverse le lac Nenupar aujourd hui, encourage par leurs parents tres fiers. Trop craquant !",
+                ],
+                [
+                    "Alerte publique : le pont arc-en-ciel est apparu pendant la nuit !",
+                    "Des aventuriers affirment que le rare pont arc-en-ciel est de retour, reliant les Bois Fleuris aux Collines Etoilees pour une duree limitee.",
+                ],
+                [
+                    "Info du jour : Fluffy le nuage prend des formes amusantes !",
+                    "Les habitants ont vu Fluffy ressembler a un lapin, un coeur et meme une tasse de the. Le nuage promet encore plus de surprises demain.",
+                ],
+                [
+                    "Reportage special : la recolte de baies bat tous les records !",
+                    "Les fermiers annoncent des quantites historiques de myrtilles et de framboises cette saison. Prepare tes paniers pour la fete des baies !",
+                ],
+                [
+                    "Sujet principal : la parade des chenilles duveteuses traverse la ville !",
+                    "Des dizaines de chenilles toutes douces ont defile en agitant de minuscules drapeaux et en se trémoussant de joie. Un adorable chaos !",
+                ],
+                [
+                    "Exclusif : des eclats de lune apercus dans la Caverne de Cristal !",
+                    "Les explorateurs nocturnes ont assiste a un spectacle rare lorsque la lumiere de la lune a danse sur les parois scintillantes.",
+                ],
+                [
+                    "Alerte : le Cafe Terrier Lapin organise un the cet apres-midi !",
+                    "Un charmant gouter avec gateau a la carotte et the aux pissenlits t attend au Cafe Terrier Lapin. Toutes les petites creatures sont invitees !",
+                ],
+                [
+                    "Previsions : des etoiles filantes sont attendues cette nuit !",
+                    "Les amateurs du ciel vont se regaler : des dizaines d etoiles filantes illumineront la nuit. Prepare tes voeux !",
+                ],
             ]
         },
     

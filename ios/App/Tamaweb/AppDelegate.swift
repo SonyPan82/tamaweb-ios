@@ -86,7 +86,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, WKScriptMessageHandler {
 
         let keyWindow = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
+            .first(where: { !$0.windows.isEmpty })?
+            .windows
             .first(where: \.isKeyWindow)
 
         if let bridgeViewController = keyWindow?.rootViewController as? CAPBridgeViewController {

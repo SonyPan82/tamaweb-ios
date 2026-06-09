@@ -1,6 +1,23 @@
-// Internationalization — auto-detects device language
-const _lang = (navigator.language || navigator.languages?.[0] || 'en').toLowerCase();
-window._isFrench = _lang.startsWith('fr');
+// Internationalization — auto-detects device language, but allows an in-app override
+const _deviceLang = (navigator.language || navigator.languages?.[0] || 'en').toLowerCase();
+const _languageStorageKey = 'tamaweb_language_override';
+
+window.getAppLanguage = function getAppLanguage() {
+    const override = localStorage.getItem(_languageStorageKey);
+    if (override === 'fr' || override === 'en') return override;
+    return _deviceLang.startsWith('fr') ? 'fr' : 'en';
+};
+
+window.setAppLanguage = function setAppLanguage(lang) {
+    if (lang !== 'fr' && lang !== 'en') {
+        localStorage.removeItem(_languageStorageKey);
+    } else {
+        localStorage.setItem(_languageStorageKey, lang);
+    }
+    window._isFrench = window.getAppLanguage() === 'fr';
+};
+
+window._isFrench = window.getAppLanguage() === 'fr';
 
 const FR = {
     // ── Boutons génériques ──────────────────────────────────────

@@ -61,6 +61,7 @@ const App = {
         playMusic: true,
         skillsAffectingEvolution: true,
         season: 'auto',
+        language: window.getAppLanguage ? window.getAppLanguage() : 'en',
     },
     constants: {
         GAME_WIDTH: 96,
@@ -193,6 +194,14 @@ const App = {
             summer: ['#27AA2F', '#59D12F', '#BAD92F'],
         }
     },
+    canUseExternalTelemetry: function(){
+        // Keep native iOS builds limited to essential online gameplay traffic only.
+        return App.ENV === 'prod' && !App.isNativeApp;
+    },
+    debugLog: function(...args){
+        if(App.ENV !== 'dev') return;
+        console.log(...args);
+    },
     routes: {
         BLOG: 'https://tamawebgame.github.io/blog/',
         ITCH_REVIEW: 'https://samandev.itch.io/tamaweb/rate?source=game',
@@ -244,7 +253,7 @@ const App = {
         const loadedData = await this.handleSequentiallyLoad([
             App.load,
         ]);
-        console.log({loadedData});
+        App.debugLog({loadedData});
 
         if(!loadedData) return;
 
@@ -265,6 +274,10 @@ const App = {
         // handle settings
         if(loadedData.settings){
             Object.assign(this.settings, loadedData.settings);
+        }
+        if(window.setAppLanguage){
+            window.setAppLanguage(this.settings.language || 'en');
+            this.settings.language = window.getAppLanguage();
         }
         this.applySettings();
 
@@ -500,7 +513,7 @@ const App = {
             App.loadingEnded = true;
         }, 50)
 
-        // rudder stack
+        // External analytics stay disabled in native builds for App Store privacy compliance.
         this.initRudderStack();
 
         // session start event
@@ -518,6 +531,8 @@ const App = {
         }, App.constants.AUTO_SAVE_INTERVAL_SECS * 1000);
     },
     initRudderStack: function(){
+        if(!App.canUseExternalTelemetry()) return;
+        if(typeof rudderanalytics?.identify !== 'function') return;
         rudderanalytics.identify(App.userId, {
             username: App.userName,
             petName: App.petDefinition?.name,
@@ -1029,12 +1044,10 @@ const App = {
                     case 'save':
                         try {
                             const b64 = decodeURIComponent(atob(commandPayload.replace(':endsave', '')));
-                            console.log(b64)
                             let json = JSON.parse(b64);
                             if(!json.pet || typeof json.pet !== 'object'){
                                 throw 'error';
                             }
-                            console.log(json)
                             let petDef = json.pet;
     
                             let def = new PetDefinition().loadStats(petDef);
@@ -2575,14 +2588,14 @@ const App = {
                 return username.match(regex) !== null;
             }
 
-            App.displayPrompt(`Set your username`, [
+            App.displayPrompt(App.isFrenchLanguage() ? `Choisis ton nom d'utilisateur` : `Set your username`, [
                 {
-                    name: 'set',
+                    name: App.isFrenchLanguage() ? 'valider' : 'set',
                     onclick: (username) => {
                         username = (username || '').toString().toLowerCase();
-                        if(!validate(username)) return App.displayPopup('Username is not valid. Please use A-Z letters and numbers.');
-                        if(username.length < 5) return App.displayPopup('Your username cannot have less than 5 characters.');
-                        if(username.length > 18) return App.displayPopup('Your username cannot have more than 18 characters.');
+                        if(!validate(username)) return App.displayPopup(App.isFrenchLanguage() ? `Nom d'utilisateur invalide. Utilise uniquement les lettres A-Z et les chiffres.` : 'Username is not valid. Please use A-Z letters and numbers.');
+                        if(username.length < 5) return App.displayPopup(App.isFrenchLanguage() ? `Ton nom d'utilisateur doit contenir au moins 5 caractères.` : 'Your username cannot have less than 5 characters.');
+                        if(username.length > 18) return App.displayPopup(App.isFrenchLanguage() ? `Ton nom d'utilisateur ne peut pas dépasser 18 caractères.` : 'Your username cannot have more than 18 characters.');
                         App.userName = username;
                         App.save();
                         App.sendAnalytics('new_user', username);
@@ -3085,26 +3098,26 @@ const App = {
                     },
                 },
                 {
-                    name: `save management`,
+                    name: App.isFrenchLanguage() ? `gestion des sauvegardes` : `save management`,
                     onclick: () => {
                         return App.displayList([
                             {
                                 name: `
                                     ${App.getIcon('floppy-disk')} 
                                     <span class="flex flex-dir-col pointer-events-none">
-                                        <span>Manual Save</span>
-                                        <small style="font-size: x-small">auto-saves every ${App.constants.AUTO_SAVE_INTERVAL_SECS} secs</small> 
+                                        <span>${App.isFrenchLanguage() ? 'Sauvegarde manuelle' : 'Manual Save'}</span>
+                                        <small style="font-size: x-small">${App.isFrenchLanguage() ? `sauvegarde auto toutes les ${App.constants.AUTO_SAVE_INTERVAL_SECS} sec` : `auto-saves every ${App.constants.AUTO_SAVE_INTERVAL_SECS} secs`}</small> 
                                     </span>
                                 `,
                                 onclick: (me) => {
                                     App.save();
                                     me.disabled = true;
-                                    me.querySelector('span').textContent = 'Saved!';
+                                    me.querySelector('span').textContent = App.isFrenchLanguage() ? 'Sauvegardée !' : 'Saved!';
                                     return true;
                                 }
                             },
                             {
-                                name: `<i class="fa-solid fa-download icon"></i> <label class="custom-file-upload"><input id="save-file" type="file"></input>Import</label>`,
+                                name: `<i class="fa-solid fa-download icon"></i> <label class="custom-file-upload"><input id="save-file" type="file"></input>${App.isFrenchLanguage() ? 'Importer' : 'Import'}</label>`,
                                 _mount: (element) => {
                                     const input = element.querySelector('#save-file');
                                     App.handleFileLoad(input, 'readAsText', (data) => {
@@ -3118,32 +3131,32 @@ const App = {
                                 }
                             },
                             {
-                                name: `<i class="fa-solid fa-upload icon"></i> Export`,
+                                name: `<i class="fa-solid fa-upload icon"></i> ${App.isFrenchLanguage() ? 'Exporter' : 'Export'}`,
                                 onclick: () => App.exportSaveCode()
                             },
                             {
-                                name: `<i class="fa-solid fa-copy icon"></i> copy`,
+                                name: `<i class="fa-solid fa-copy icon"></i> ${App.isFrenchLanguage() ? 'copier' : 'copy'}`,
                                 onclick: async () => {
-                                    const loadingPopup = App.displayPopup('loading...');
+                                    const loadingPopup = App.displayPopup(App.isFrenchLanguage() ? 'chargement...' : 'loading...');
                                     const charCode = await App.getSaveCode();
                                     loadingPopup.close();
-                                    App.displayConfirm(`Here you'll be able to copy your unique save code and continue your playthrough on another device`, [
+                                    App.displayConfirm(App.isFrenchLanguage() ? `Ici, tu peux copier ton code de sauvegarde unique pour continuer ta partie sur un autre appareil.` : `Here you'll be able to copy your unique save code and continue your playthrough on another device`, [
                                         {
                                             name: 'ok',
                                             onclick: () => {
-                                                App.displayConfirm(`After copying the code, open Tamaweb on another device and paste the code in <b>settings > input code</b>`, [
+                                                App.displayConfirm(App.isFrenchLanguage() ? `Après avoir copié le code, ouvre Tamaweb sur un autre appareil puis colle-le dans <b>paramètres > entrer un code</b>` : `After copying the code, open Tamaweb on another device and paste the code in <b>settings > input code</b>`, [
                                                     {
                                                         name: 'ok',
                                                         onclick: () => {
                                                             try {
                                                                 if(App.isOnItch) throw 'itch_clipboard';
                                                                 _copyText(charCode);
-                                                                console.log('save code copied', charCode);
-                                                                App.displayPopup('Save code copied!', 1000);
+                                                                App.debugLog('save code copied');
+                                                                App.displayPopup(App.isFrenchLanguage() ? 'Code de sauvegarde copié !' : 'Save code copied!', 1000);
                                                             } catch(e) {
-                                                                const prompt = App.displayPrompt(`Copy your save code from the box below:<br><small><i class="fa-solid fa-info-circle"></i> starts with <b>save:</b> and ends with <b>:endsave</b></small>`, [
+                                                                const prompt = App.displayPrompt(App.isFrenchLanguage() ? `Copie ton code de sauvegarde dans le champ ci-dessous :<br><small><i class="fa-solid fa-info-circle"></i> il commence par <b>save:</b> et se termine par <b>:endsave</b></small>` : `Copy your save code from the box below:<br><small><i class="fa-solid fa-info-circle"></i> starts with <b>save:</b> and ends with <b>:endsave</b></small>`, [
                                                                     {
-                                                                        name: 'Ok, I copied',
+                                                                        name: App.isFrenchLanguage() ? 'C’est bon, j’ai copié' : 'Ok, I copied',
                                                                         class: 'back-btn',
                                                                         onclick: () => {}
                                                                     }
@@ -3289,7 +3302,7 @@ const App = {
                 },
                 { type: 'separator', _ignore: ignoreFirstDivider },
                 {
-                    name: `gameplay settings`,
+                    name: App.isFrenchLanguage() ? `parametres de jeu` : `gameplay settings`,
                     onclick: () => {
                         const getStateIcon = (state) => {
                             const className = state ? 'option on' : 'option off';
@@ -3298,7 +3311,7 @@ const App = {
 
                         return App.displayList([
                             {
-                                name: `Sleeping Hours`,
+                                name: App.isFrenchLanguage() ? `Heures de sommeil` : `Sleeping Hours`,
                                 onclick: (e) => {
                                     const list = UI.genericListContainer();
                                     const content = UI.empty();
@@ -3326,14 +3339,14 @@ const App = {
                                             endTime = App.constants.SLEEP_END + App.settings.sleepingHoursOffset;
                                         const rangeStyle = `display: flex;justify-content: space-between;`
                                         info.innerHTML = `
-                                            sleeping
+                                            ${App.isFrenchLanguage() ? 'sommeil' : 'sleeping'}
                                             <br>
                                             <b> 
                                                 <div style="${rangeStyle}">
-                                                    from <div>${App.clampWithin24HourFormat(startTime)}:00</div>
+                                                    ${App.isFrenchLanguage() ? 'de' : 'from'} <div>${App.clampWithin24HourFormat(startTime)}:00</div>
                                                 </div>
                                                 <div style="${rangeStyle}">
-                                                    to <div>${App.clampWithin24HourFormat(endTime)}:00</div>
+                                                    ${App.isFrenchLanguage() ? 'à' : 'to'} <div>${App.clampWithin24HourFormat(endTime)}:00</div>
                                                 </div>
                                             </b>
                                         `
@@ -3356,28 +3369,28 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.automaticAging)} Auto aging: <i>${App.settings.automaticAging ? 'On' : 'Off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.automaticAging)} ${App.isFrenchLanguage() ? 'Vieillissement auto' : 'Auto aging'}: <i>${App.settings.automaticAging ? (App.isFrenchLanguage() ? 'actif' : 'On') : (App.isFrenchLanguage() ? 'inactif' : 'Off')}</i>`,
                                 onclick: (e) => {
                                     if(!App.settings.automaticAging){
-                                        App.displayConfirm(`Are you sure? This will make your pets automatically age up after a certain amount of time`, [
+                                        App.displayConfirm(App.isFrenchLanguage() ? `Tu confirmes ? Tes animaux vieilliront automatiquement apres un certain temps.` : `Are you sure? This will make your pets automatically age up after a certain amount of time`, [
                                             {
-                                                name: 'yes',
+                                                name: App.isFrenchLanguage() ? 'oui' : 'yes',
                                                 onclick: () => {
                                                     App.settings.automaticAging = true;
-                                                    App.displayPopup(`Automatic aging turned on`);
+                                                    App.displayPopup(App.isFrenchLanguage() ? `Vieillissement automatique active` : `Automatic aging turned on`);
                                                     e._mount();
                                                     App.save();
                                                 }
                                             },
                                             {
-                                                name: 'no',
+                                                name: App.isFrenchLanguage() ? 'non' : 'no',
                                                 class: 'back-btn',
                                                 onclick: () => {}
                                             }
                                         ])
                                     } else {
                                         App.settings.automaticAging = false;
-                                        App.displayPopup(`Automatic aging turned off`);
+                                        App.displayPopup(App.isFrenchLanguage() ? `Vieillissement automatique desactive` : `Automatic aging turned off`);
                                         App.save();
                                     }
                                     e._mount();
@@ -3385,7 +3398,16 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.season)} Season: <i>${App.settings.season}</i>`,
+                                _mount: (e) => {
+                                    const seasonLabels = {
+                                        auto: App.isFrenchLanguage() ? 'auto' : 'auto',
+                                        spring: App.isFrenchLanguage() ? 'printemps' : 'spring',
+                                        summer: App.isFrenchLanguage() ? 'été' : 'summer',
+                                        autumn: App.isFrenchLanguage() ? 'automne' : 'autumn',
+                                        winter: App.isFrenchLanguage() ? 'hiver' : 'winter',
+                                    };
+                                    e.innerHTML = `${getStateIcon(App.settings.season)} ${App.isFrenchLanguage() ? 'Saison' : 'Season'}: <i>${seasonLabels[App.settings.season] || App.settings.season}</i>`;
+                                },
                                 onclick: (e) => {
                                     const possibleOptions = [
                                         'auto',
@@ -3404,7 +3426,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.showWantName)} show want name: <i>${App.settings.showWantName ? 'On' : 'Off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.showWantName)} ${App.isFrenchLanguage() ? 'afficher le besoin' : 'show want name'}: <i>${App.settings.showWantName ? (App.isFrenchLanguage() ? 'actif' : 'On') : (App.isFrenchLanguage() ? 'inactif' : 'Off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.showWantName = !App.settings.showWantName;
                                     App.applySettings();
@@ -3413,7 +3435,7 @@ const App = {
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.genderedPets)} gendered pets: <i>${App.settings.genderedPets ? 'On' : 'Off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${getStateIcon(App.settings.genderedPets)} ${App.isFrenchLanguage() ? 'genre des animaux' : 'gendered pets'}: <i>${App.settings.genderedPets ? (App.isFrenchLanguage() ? 'actif' : 'On') : (App.isFrenchLanguage() ? 'inactif' : 'Off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.genderedPets = !App.settings.genderedPets;
                                     item._mount(); 
@@ -3425,7 +3447,7 @@ const App = {
                                 ${getStateIcon(App.settings.skillsAffectingEvolution)} 
                                 <div class="overflow-hidden flex">
                                     <div class="marquee">
-                                        skills affecting evolution: <i>${App.settings.skillsAffectingEvolution ? 'On' : 'Off'}</i>
+                                        ${App.isFrenchLanguage() ? 'compétences qui influencent l’évolution' : 'skills affecting evolution'}: <i>${App.settings.skillsAffectingEvolution ? (App.isFrenchLanguage() ? 'actif' : 'On') : (App.isFrenchLanguage() ? 'inactif' : 'Off')}</i>
                                     </div>
                                 </div>
                                 `,
@@ -3439,19 +3461,19 @@ const App = {
                     }
                 },
                 {
-                    name: `system settings`,
+                    name: App.isFrenchLanguage() ? `paramètres système` : `system settings`,
                     onclick: () => {
                         App.displayList([
                             {
-                                name: `sound fx: <i>${App.settings.playSound ? 'on' : 'off'}</i>`,
+                                name: `${App.isFrenchLanguage() ? 'effets sonores' : 'sound fx'}: <i>${App.settings.playSound ? (App.isFrenchLanguage() ? 'actif' : 'on') : (App.isFrenchLanguage() ? 'inactif' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.playSound = !App.settings.playSound;
-                                    item.innerHTML = `sound fx: <i>${App.settings.playSound ? 'on' : 'off'}</i>`;  
+                                    item.innerHTML = `${App.isFrenchLanguage() ? 'effets sonores' : 'sound fx'}: <i>${App.settings.playSound ? (App.isFrenchLanguage() ? 'actif' : 'on') : (App.isFrenchLanguage() ? 'inactif' : 'off')}</i>`;  
                                     return true;
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `bg music: <i>${App.settings.playMusic ? 'on' : 'off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${App.isFrenchLanguage() ? 'musique de fond' : 'bg music'}: <i>${App.settings.playMusic ? (App.isFrenchLanguage() ? 'active' : 'on') : (App.isFrenchLanguage() ? 'inactive' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.playMusic = !App.settings.playMusic;
                                     item._mount();
@@ -3459,15 +3481,15 @@ const App = {
                                 }
                             },
                             {
-                                name: `vibration: <i>${App.settings.vibrate ? 'on' : 'off'}</i>`,
+                                name: `${App.isFrenchLanguage() ? 'vibrations' : 'vibration'}: <i>${App.settings.vibrate ? (App.isFrenchLanguage() ? 'actif' : 'on') : (App.isFrenchLanguage() ? 'inactif' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.vibrate = !App.settings.vibrate;
-                                    item.innerHTML = `vibration: <i>${App.settings.vibrate ? 'on' : 'off'}</i>`;  
+                                    item.innerHTML = `${App.isFrenchLanguage() ? 'vibrations' : 'vibration'}: <i>${App.settings.vibrate ? (App.isFrenchLanguage() ? 'actif' : 'on') : (App.isFrenchLanguage() ? 'inactif' : 'off')}</i>`;  
                                     return true;
                                 }
                             },
                             {
-                                _mount: (e) => e.innerHTML = `classic menu: <i>${App.settings.classicMainMenuUI ? 'on' : 'off'}</i>`,
+                                _mount: (e) => e.innerHTML = `${App.isFrenchLanguage() ? 'menu classique' : 'classic menu'}: <i>${App.settings.classicMainMenuUI ? (App.isFrenchLanguage() ? 'actif' : 'on') : (App.isFrenchLanguage() ? 'inactif' : 'off')}</i>`,
                                 onclick: (item) => {
                                     App.settings.classicMainMenuUI = !App.settings.classicMainMenuUI;
                                     item._mount();
@@ -3476,23 +3498,50 @@ const App = {
                                 }
                             },
                             {
-                                name: `appearance`,
+                                name: App.isFrenchLanguage() ? `apparence` : `appearance`,
                                 onclick: () => {
                                     return App.displayList(appearanceOptions);
                                 }
                             },
                             {
-                                _ignore: !App.canUseNativeLocalNotifications(),
-                                _mount: (e) => e.innerHTML = `notifications iphone: <i>${App.settings.notifications ? 'active' : 'inactive'}</i>`,
+                                _mount: (e) => e.innerHTML = `${App.isFrenchLanguage() ? 'langue' : 'language'}: <i>${App.settings.language === 'fr' ? (App.isFrenchLanguage() ? 'français' : 'french') : (App.isFrenchLanguage() ? 'anglais' : 'english')}</i>`,
                                 onclick: () => {
                                     return App.displayList([
                                         {
-                                            _mount: (e) => e.innerHTML = `systeme: <i>${App.settings.notifications ? 'active' : 'inactive'}</i>`,
+                                            name: `${App.isFrenchLanguage() ? 'français' : 'french'}${App.settings.language === 'fr' ? ' ✓' : ''}`,
+                                            onclick: () => {
+                                                App.settings.language = 'fr';
+                                                window.setAppLanguage?.('fr');
+                                                App.save();
+                                                window.location.reload();
+                                                return false;
+                                            }
+                                        },
+                                        {
+                                            name: `${App.isFrenchLanguage() ? 'anglais' : 'english'}${App.settings.language === 'en' ? ' ✓' : ''}`,
+                                            onclick: () => {
+                                                App.settings.language = 'en';
+                                                window.setAppLanguage?.('en');
+                                                App.save();
+                                                window.location.reload();
+                                                return false;
+                                            }
+                                        },
+                                    ], null, App.isFrenchLanguage() ? 'Langue' : 'Language');
+                                }
+                            },
+                            {
+                                _ignore: !App.canUseNativeLocalNotifications(),
+                                _mount: (e) => e.innerHTML = `${App.isFrenchLanguage() ? 'notifications iphone' : 'notifications iphone'}: <i>${App.settings.notifications ? (App.isFrenchLanguage() ? 'actives' : 'active') : (App.isFrenchLanguage() ? 'inactives' : 'inactive')}</i>`,
+                                onclick: () => {
+                                    return App.displayList([
+                                        {
+                                            _mount: (e) => e.innerHTML = `${App.isFrenchLanguage() ? 'système' : 'system'}: <i>${App.settings.notifications ? (App.isFrenchLanguage() ? 'actif' : 'active') : (App.isFrenchLanguage() ? 'inactif' : 'inactive')}</i>`,
                                             onclick: (btn) => App.toggleNativeNotifications(btn),
                                         },
                                         {
                                             _ignore: !App.settings.notifications || !App.getNativeLocalNotifications(),
-                                            _mount: (e) => e.innerHTML = `alertes plantes: <i>${App.settings.notificationPlants ? 'on' : 'off'}</i>`,
+                                            _mount: (e) => e.innerHTML = `${App.isFrenchLanguage() ? 'alertes plantes' : 'plant alerts'}: <i>${App.settings.notificationPlants ? (App.isFrenchLanguage() ? 'actives' : 'on') : (App.isFrenchLanguage() ? 'inactives' : 'off')}</i>`,
                                             onclick: async (item) => {
                                                 App.settings.notificationPlants = !App.settings.notificationPlants;
                                                 App.save();
@@ -3501,11 +3550,11 @@ const App = {
                                                 return true;
                                             }
                                         },
-                                    ], null, 'Notifications');
+                                    ], null, App.isFrenchLanguage() ? 'Notifications' : 'Notifications');
                                 }
                             },
                             {
-                                name: '+ view size',
+                                name: App.isFrenchLanguage() ? '+ taille de vue' : '+ view size',
                                 onclick: () => {
                                     App.settings.screenSize += 0.1;
                                     App.applySettings();
@@ -3513,7 +3562,7 @@ const App = {
                                 }
                             },
                             {
-                                name: '- view size',
+                                name: App.isFrenchLanguage() ? '- taille de vue' : '- view size',
                                 onclick: () => {
                                     App.settings.screenSize -= 0.1;
                                     App.applySettings();
@@ -3521,7 +3570,7 @@ const App = {
                                 }
                             },
                             {
-                                name: 'reset view size',
+                                name: App.isFrenchLanguage() ? 'réinitialiser la vue' : 'reset view size',
                                 onclick: () => {
                                     App.settings.screenSize = 1;
                                     App.applySettings();
@@ -3533,33 +3582,33 @@ const App = {
                     }
                 },
                 {
-                    name: 'input code',
+                    name: App.isFrenchLanguage() ? 'entrer un code' : 'input code',
                     onclick: () => {
-                        App.displayPrompt(`Enter code:`, [
+                        App.displayPrompt(App.isFrenchLanguage() ? `Entre le code :` : `Enter code:`, [
                             {
-                                name: 'set',
+                                name: App.isFrenchLanguage() ? 'valider' : 'set',
                                 onclick: (value) => {
                                     App.handleInputCode(value);
                                     return false;
                                 }
                             },
-                            {name: 'cancel', class: 'back-btn', onclick: () => {}},
+                            {name: App.isFrenchLanguage() ? 'annuler' : 'cancel', class: 'back-btn', onclick: () => {}},
                         ]);
                         return true;
                     }
                 },
                 { type: 'separator' },
                 {
-                    name: 'reset pet data',
+                    name: App.isFrenchLanguage() ? 'effacer les données du pet' : 'reset pet data',
                     onclick: () => {
-                        App.displayConfirm('Are you sure you want to delete your saved pet?', [
+                        App.displayConfirm(App.isFrenchLanguage() ? `Tu veux vraiment supprimer ton pet sauvegardé ?` : 'Are you sure you want to delete your saved pet?', [
                             {
-                                name: 'yes (delete)',
+                                name: App.isFrenchLanguage() ? 'oui (supprimer)' : 'yes (delete)',
                                 onclick: async () => {
                                     App.save();
                                     App.save = () => {};
 
-                                    App.displayPopup('resetting...', App.INF);
+                                    App.displayPopup(App.isFrenchLanguage() ? 'réinitialisation...' : 'resetting...', App.INF);
 
                                     window.localStorage?.removeItem('pet');
                                     window.localStorage?.removeItem('last_time');
@@ -3573,7 +3622,7 @@ const App = {
                                 }
                             },
                             {
-                                name: 'no',
+                                name: App.isFrenchLanguage() ? 'non' : 'no',
                                 class: 'back-btn',
                                 onclick: () => { }
                             }
@@ -3582,18 +3631,18 @@ const App = {
                     }
                 },
                 {
-                    name: 'factory reset',
+                    name: App.isFrenchLanguage() ? 'réinitialisation complète' : 'factory reset',
                     onclick: () => {
-                        App.displayConfirm('Are you sure you want to completely delete your data? this will reset your pets, achievements, online id and everything else!', [
+                        App.displayConfirm(App.isFrenchLanguage() ? `Tu veux vraiment tout supprimer ? Cela réinitialisera tes pets, tes succès, ton identifiant en ligne et tout le reste !` : 'Are you sure you want to completely delete your data? this will reset your pets, achievements, online id and everything else!', [
                             {
-                                name: 'yes',
+                                name: App.isFrenchLanguage() ? 'oui' : 'yes',
                                 onclick: () => {
-                                    App.displayConfirm('Are you sure? There is no way to revert this.', [
+                                    App.displayConfirm(App.isFrenchLanguage() ? `Tu confirmes ? Cette action est irréversible.` : 'Are you sure? There is no way to revert this.', [
                                         {
-                                            name: 'yes (delete)',
+                                            name: App.isFrenchLanguage() ? 'oui (supprimer)' : 'yes (delete)',
                                             onclick: async () => {
                                                 App.save = () => {};
-                                                App.displayPopup('resetting...', App.INF);
+                                                App.displayPopup(App.isFrenchLanguage() ? 'réinitialisation...' : 'resetting...', App.INF);
 
                                                 window.localStorage?.clear()
                                                 await window.idbKeyval.clear();
@@ -3606,7 +3655,7 @@ const App = {
                                             }
                                         },
                                         {
-                                            name: 'no',
+                                            name: App.isFrenchLanguage() ? 'non' : 'no',
                                             class: 'back-btn',
                                             onclick: () => { }
                                         }
@@ -3631,6 +3680,12 @@ const App = {
                 {
                     name: `send feedback`,
                     onclick: () => {
+                        if(!App.canUseExternalTelemetry()){
+                            App.displayPopup(App.isFrenchLanguage()
+                                ? `Le retour intégré n'est pas disponible dans cette version iPhone.`
+                                : `In-app feedback is unavailable in this iPhone build.`);
+                            return true;
+                        }
                         return App.displayPrompt(`what would you like to to be added in the next update?`, [
                             {
                                 name: 'send',
@@ -6140,21 +6195,21 @@ const App = {
                     }
                 },
                 {
-                    name: `friend codes`,
+                    name: App.isFrenchLanguage() ? `codes ami` : `friend codes`,
                     onclick: () => {
                         App.displayList([
                             {
-                                name: 'get code',
+                                name: App.isFrenchLanguage() ? 'obtenir le code' : 'get code',
                                 onclick: () => {
                                     const pet = App.petDefinition?.serialize?.() ?? App.petDefinition;
                                     let charCode = 'friend:' + btoa(encodeURIComponent(JSON.stringify({ user_id: App.userId, pet })));
                                     _copyText(charCode);
-                                    console.log(charCode);
-                                    App.displayConfirm(`Your friend code has been copied to the clipboard!`, [
+                                    App.debugLog('friend code copied');
+                                    App.displayConfirm(App.isFrenchLanguage() ? `Ton code ami a été copié dans le presse-papiers !` : `Your friend code has been copied to the clipboard!`, [
                                         {
-                                            name: 'next',
+                                            name: App.isFrenchLanguage() ? 'suivant' : 'next',
                                             onclick: () => {
-                                                App.displayConfirm(`Send it to your friend and they'll be able to add ${App.petDefinition.name} as a friend using <b>Phone > Friend Codes > Input code</b>`, [
+                                                App.displayConfirm(App.isFrenchLanguage() ? `Envoie-le à ton ami et il pourra ajouter ${App.petDefinition.name} comme ami via <b>Téléphone > Codes ami > Entrer un code</b>` : `Send it to your friend and they'll be able to add ${App.petDefinition.name} as a friend using <b>Phone > Friend Codes > Input code</b>`, [
                                                     {
                                                         name: 'ok',
                                                         onclick: () => {}
@@ -6167,13 +6222,13 @@ const App = {
                                 }
                             },
                             {
-                                name: 'input code',
+                                name: App.isFrenchLanguage() ? 'entrer un code' : 'input code',
                                 onclick: () => {
-                                    App.displayPrompt(`enter your friend code:`, [
+                                    App.displayPrompt(App.isFrenchLanguage() ? `Entre le code ami :` : `enter your friend code:`, [
                                         {
-                                            name: 'enter',
+                                            name: App.isFrenchLanguage() ? 'valider' : 'enter',
                                             onclick: (rawCode) => {
-                                                if(rawCode.indexOf('friend:') == -1) return App.displayPopup(`Invalid friend code!`);
+                                                if(rawCode.indexOf('friend:') == -1) return App.displayPopup(App.isFrenchLanguage() ? `Code ami invalide !` : `Invalid friend code!`);
 
                                                 let b64 = rawCode.replace('friend:', '');
                                                 try {
@@ -6183,35 +6238,35 @@ const App = {
                                                         throw 'error';
                                                     }
 
-                                                    if(json.user_id === App.userId) return App.displayPopup(`You can't add yourself as a friend!`);
+                                                    if(json.user_id === App.userId) return App.displayPopup(App.isFrenchLanguage() ? `Tu ne peux pas t'ajouter toi-même en ami !` : `You can't add yourself as a friend!`);
 
                                                     let petDef = json.pet;
 
                                                     let def = new PetDefinition().loadStats(petDef);
                                                     
-                                                    App.displayConfirm(`Are you trying to add <div style="font-weight: bold">${def.getCSprite()} ${def.name}?</div> as a friend?`, [
+                                                    App.displayConfirm(App.isFrenchLanguage() ? `Tu veux ajouter <div style="font-weight: bold">${def.getCSprite()} ${def.name} ?</div> comme ami ?` : `Are you trying to add <div style="font-weight: bold">${def.getCSprite()} ${def.name}?</div> as a friend?`, [
                                                         {
-                                                            name: 'yes',
+                                                            name: App.isFrenchLanguage() ? 'oui' : 'yes',
                                                             onclick: () => {
                                                                 App.petDefinition.addFriend(def);
                                                                 App.closeAllDisplays();
-                                                                return App.displayPopup(`${def.name} was added to the friends list!`, 3000);
+                                                                return App.displayPopup(App.isFrenchLanguage() ? `${def.name} a été ajouté à la liste d'amis !` : `${def.name} was added to the friends list!`, 3000);
                                                             }
                                                         },
                                                         {
-                                                            name: 'no',
+                                                            name: App.isFrenchLanguage() ? 'non' : 'no',
                                                             class: 'back-btn',
                                                             onclick: () => {}
                                                         },
                                                     ])
                                                 } catch(e) {    
-                                                    return App.displayPopup('Invalid friend code!');
+                                                    return App.displayPopup(App.isFrenchLanguage() ? 'Code ami invalide !' : 'Invalid friend code!');
                                                 }
                                             }
                                         },
                                         
                                         {
-                                            name: 'cancel',
+                                            name: App.isFrenchLanguage() ? 'annuler' : 'cancel',
                                             class: 'back-btn',
                                             onclick: () => { }
                                         },
@@ -8103,7 +8158,7 @@ const App = {
         return charCode;
     },
     exportSaveCode: async function(providedCode){
-        const loadingPopup = App.displayPopup('loading...');
+        const loadingPopup = App.displayPopup(App.isFrenchLanguage() ? 'chargement...' : 'loading...');
         const code = providedCode ?? await App.getSaveCode();
         loadingPopup.close();
         downloadTextFile(`${App.petDefinition.name}_${generateTimestamp()}.tws`, code);
@@ -8114,13 +8169,16 @@ const App = {
         navigator?.vibrate(dur || 35);
     },
     sendAnalytics: function(type, value, force){
+        if(!App.canUseExternalTelemetry()) return;
         if(!force && App.ENV !== 'prod') return;
 
         if(!type) type = 'default';
 
-        rudderanalytics.track(
-            type, {value},
-        );
+        if(typeof rudderanalytics?.track === 'function'){
+            rudderanalytics.track(
+                type, {value},
+            );
+        }
 
         if(App.isOnItch) type += '_itch';
         else if(App.isOnElectronClient) type += '_electron';
@@ -8128,18 +8186,20 @@ const App = {
         const user = (App.userName ? App.userName + '-' : '') + App.userId;
         const url = `https://docs.google.com/forms/d/e/1FAIpQLSfzl5hhhnV3IAdxuA90ieEaeBAhCY9Bh4s151huzTMeByMwiw/formResponse?usp=pp_url&entry.1384465975=${user}&entry.1653037117=${App.petDefinition?.name || ''}&entry.1322693089=${type}&entry.1403809294=${value || ''}`;
 
-        fetch(url).catch(e => {});
+        fetch(url).catch(() => {});
     },
     sendFeedback: function(text){
+        if(!App.canUseExternalTelemetry()) return false;
         if(!text) return;
 
         const sendingText = `[game:${VERSION}-pl:${App.isOnItch ? 'itch' : 'web'}]: ${text}`;
 
         const user = (App.userName ? App.userName + '-' : '') + App.userId;
         const url = `https://docs.google.com/forms/d/e/1FAIpQLSenonpIhjHL8BYJbnOHqF2KudJiDciEveJG56BdGsvJ01-rTA/formResponse?usp=pp_url&entry.1753365981=${user}&entry.233513152=${sendingText}`;
-        fetch(url).catch(e => {});
+        fetch(url).catch(() => {});
     },
     sendErrorLog: function(error, force){
+        if(!App.canUseExternalTelemetry()) return;
         if(!force && App.ENV !== 'prod') return;
 
         if(!error) return;
@@ -8149,7 +8209,7 @@ const App = {
         }
         App.temp.lastErrorSent = App.fullTime;
 
-        window?.Sentry?.captureException(error, {
+        window?.Sentry?.captureException?.(error, {
             username: App.userName,
             userId: App.userId,
         });
@@ -8157,7 +8217,7 @@ const App = {
         const versionInfo = `[game:${VERSION}-pl:${App.isOnItch ? 'itch' : 'web'}]`;
         const user = (App.userName ? App.userName + '-' : '') + App.userId;
         const url = `https://docs.google.com/forms/d/e/1FAIpQLScSloIis4P1yyKQ3imYcaipOk2XS12Qj16ZeM4DicTHi3RSCQ/formResponse?usp=pp_url&entry.1957124188=${user}&entry.1587672397=${`${versionInfo} - ${navigator?.userAgent}`}&entry.36658531=${error}`
-        fetch(url).catch(e => {});
+        fetch(url).catch(() => {});
     },
     installAsPWA: function() { 
         if(!App.deferredInstallPrompt) return false;
@@ -8311,7 +8371,7 @@ const App = {
         new Notification(title, options);
     },
     isFrenchLanguage: function(){
-        return !!window._isFrench;
+        return window.getAppLanguage ? window.getAppLanguage() === 'fr' : !!window._isFrench;
     },
     getIosNativeLocalNotifications: function(){
         if(!App.isNativeApp) return null;
