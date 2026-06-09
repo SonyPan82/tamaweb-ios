@@ -1,0 +1,16 @@
+{
+	"appId": "com.tamaweb.app",
+	"appName": "Tamaweb",
+	"webDir": "www",
+	"bundledWebRuntime": false,
+	"server": {
+		"iosScheme": "capacitor"
+	},
+	"ios": {
+		"contentInset": "never",
+		"allowsLinkPreview": false,
+		"scrollEnabled": false,
+		"backgroundColor": "#d7f5d2"
+	},
+	"packageClassList": []
+}

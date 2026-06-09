@@ -6,14 +6,6 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const DEST = path.join(ROOT, 'www');
 const CAPACITOR_CORE_SRC = path.join(ROOT, 'node_modules', '@capacitor', 'core', 'dist', 'capacitor.js');
-const CAPACITOR_LOCAL_NOTIFICATIONS_SRC = path.join(
-    ROOT,
-    'node_modules',
-    '@capacitor',
-    'local-notifications',
-    'dist',
-    'plugin.js'
-);
 
 const EXCLUDES = new Set([
     'ios', 'node_modules', 'www', '.git',
@@ -47,9 +39,5 @@ for (const entry of fs.readdirSync(ROOT)) {
 }
 
 copyRecursive(CAPACITOR_CORE_SRC, path.join(DEST, 'vendor', 'capacitor.js'));
-copyRecursive(
-    CAPACITOR_LOCAL_NOTIFICATIONS_SRC,
-    path.join(DEST, 'vendor', 'capacitor-local-notifications.js')
-);
 
 console.log('Web assets copied to www/');

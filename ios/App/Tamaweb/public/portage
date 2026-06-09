@@ -1,0 +1,250 @@
+Portage iOS de Tamaweb
+=======================
+
+Base de comparaison
+-------------------
+
+Ce document compare l'état actuel du projet avec la base clonée du dépôt d'origine.
+
+- Dépôt d'origine cloné localement depuis : `https://github.com/autosam/Tamaweb`
+- Référence locale utilisée pour la comparaison : commit `5199c10`
+- État actuel comparé : commit local `163c989` plus les modifications non commitées présentes dans le dossier de travail
+
+
+Résumé des écarts avec le projet d'origine
+------------------------------------------
+
+Le portage ne se limite pas à une simple ouverture du projet dans Capacitor. Le projet a été adapté pour fonctionner comme une application iPhone autonome, avec une base iOS native, un pipeline de build web vers `www/`, des ajustements audio, des changements d'interface et une adaptation de l'habillage mobile autour du jeu.
+
+À ce stade, l'écart avec la base d'origine représente :
+
+- 67 fichiers modifiés ou ajoutés par rapport au commit d'origine utilisé comme base
+- 1597 insertions et 295 suppressions au total sur la comparaison globale actuelle
+
+
+Ce qui a été ajouté pour le portage iOS
+---------------------------------------
+
+1. Intégration Capacitor et projet iOS
+
+- Ajout de `capacitor.config.json`
+- Ajout du script de build `scripts/build.js`
+- Création du dossier `ios/` avec le projet Xcode complet
+- Ajout des fichiers natifs iOS : `AppDelegate.swift`, `Info.plist`, `storyboards`, `Assets.xcassets`, `CapApp-SPM`, configuration Xcode
+
+2. Pipeline de packaging web vers iOS
+
+- Le projet web est copié dans `www/`
+- `npm run build` prépare les assets pour Capacitor
+- `npm run sync` copie `www/` dans `ios/App/App/public`
+
+3. Audio iOS
+
+- Ajout d'une série de fichiers `.m4a` dans `resources/sounds/`
+- Cela permet une meilleure compatibilité audio sur iPhone par rapport aux seuls `.ogg`
+
+4. Internationalisation
+
+- Ajout de `src/i18n.js`
+- Intégration du passage `window.t(...)` sur certaines listes et grilles de l'interface
+
+
+Modifications fonctionnelles du portage
+---------------------------------------
+
+1. Nettoyage des réglages pour l'usage iPhone
+
+- Suppression de l'alerte rouge de sauvegarde persistante dans l'app native
+- Suppression du badge rouge sur l'icône des réglages
+- Suppression du menu `Shell Settings`
+- Le bouton flottant `settings` mobile a finalement été retiré pour laisser l'accès via l'interface du Tamagotchi
+
+2. Réorganisation des réglages
+
+- L'entrée `appearance` a été déplacée dans `system settings`
+- `Manual Save` a été déplacé dans `save management`
+- `appearance` regroupe maintenant :
+  - le choix du mode `light` / `dark`
+  - les couleurs de fond `orange`, `bleu`, `vert`, `rose`
+  - le choix du pattern de fond
+
+3. Adaptation visuelle mobile
+
+- Ajout et ajustement d'une barre de contrôles mobile dédiée
+- Ajout des meta tags iPhone et web app dans `index.html`
+- Ajustements CSS pour un usage plein écran sur iPhone avec safe areas
+- Le bouton principal mobile a été simplifié pour ne plus afficher l'icône maison
+- Correction du fond noir natif iPhone en bas d'écran avec un fond d'app cohérent côté Capacitor
+
+4. Notifications iPhone natives
+
+- Ajout d'un pont natif iOS direct entre l'application web et `UNUserNotificationCenter`
+- Ajout d'un réglage `notifications iphone` dans `system settings`
+- Ajout d'alertes pour :
+  - faim critique
+  - danger critique
+  - mort
+  - évolution disponible
+  - plantes à arroser
+  - plantes en risque de mort
+- Correction de la logique pour garder une vraie alerte de danger avant la mort
+- Correction de la logique des plantes pour éviter des notifications fausses quand la pluie du jeu les arrose déjà
+
+
+Rendu et moteur de scène
+------------------------
+
+Le projet d'origine utilisait un espace logique carré `96x96`. Une tentative de passage en portrait non carré a été faite, puis annulée car elle dégradait trop fortement les décors d'origine.
+
+1. Résolution native plus adaptée aux écrans retina
+
+- Le calcul du canvas interne prend en compte :
+  - un scale d'affichage
+  - `window.devicePixelRatio`
+- Le rendu est donc plus propre sur iPhone que dans la version web de base
+
+2. Retour au format de scène d'origine pour préserver les décors
+
+- Le moteur est revenu à un espace logique carré `96x96`
+- Les décors ne sont plus recadrés de force en portrait
+- Ce retour arrière a été fait pour éviter les fonds coupés, étirés ou remplacés visuellement par des zones parasites
+
+3. Ajustement de l'ombre du pet
+
+- L'ombre n'est plus calée sur la hauteur fixe `96`
+- Elle utilise désormais `GAME_HEIGHT`
+
+
+Fichiers principaux modifiés côté web
+-------------------------------------
+
+Les fichiers les plus touchés depuis la base d'origine sont :
+
+- `src/App.js`
+- `styles.css`
+- `index.html`
+- `ios/App/App/AppDelegate.swift`
+- `src/Drawer.js`
+- `src/Pet.js`
+- `scripts/build.js`
+- `capacitor.config.json`
+- `package.json`
+
+
+Nettoyage des références au dépôt d'origine
+-------------------------------------------
+
+Le projet courant ne pointe plus vers le dépôt d'origine.
+
+Ce qui a été nettoyé :
+
+- suppression du remote Git `origin`
+- suppression des références GitHub d'origine dans `package.json`
+- suppression du lien projet d'origine dans `README.md`
+- suppression des anciens fichiers de documentation `README.md` et `ROADMAP.md` encore présents dans la copie d'origine
+
+
+État Git actuel
+---------------
+
+Le dossier de travail contient encore des changements non commités par-dessus le commit local `163c989`.
+
+Ils correspondent principalement à :
+
+- déplacement de `appearance` dans `system settings`
+- déplacement de `Manual Save` dans `save management`
+- suppression du bouton flottant `settings`
+- amélioration du rendu retina
+- correction du fond noir iPhone en bas d'écran
+- simplification du bouton principal mobile sans icône maison
+- ajout des notifications iPhone natives
+- correction des alertes plantes et danger critique
+- adaptation du bridge iOS direct dans `AppDelegate.swift`
+- mise à jour du pipeline de build pour le portage Capacitor
+- nettoyage des métadonnées pointant vers le dépôt d'origine
+
+Il existe aussi un dossier généré localement par Xcode qui n'est pas encore suivi :
+
+- `ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/`
+
+Le fichier `portage` lui-même est aussi un ajout local non encore commité.
+
+
+État d'avancement
+-----------------
+
+Ce qui est déjà intégré
+-----------------------
+
+1. Notifications iPhone natives
+
+La base est en place et fonctionne maintenant avec un pont natif iOS direct vers `UNUserNotificationCenter`.
+
+Ce qui est déjà intégré :
+
+- faim critique
+- danger critique
+- mort
+- évolution disponible
+- plantes à arroser
+- plantes en risque de mort
+
+Des ajustements ont aussi été faits pour :
+
+- garder une vraie alerte de danger avant la mort
+- éviter les fausses alertes plantes quand la pluie du jeu les arrose déjà
+Suite / Roadmap
+---------------
+
+1. Météo liée à l'iPhone
+
+J'aimerais bien que la météo du jeu puisse dépendre de la météo réelle de l'iPhone.
+
+L'idée serait par exemple :
+
+- s'il pleut dehors, il pleut aussi dans le jeu
+- s'il neige dehors, on a de la neige dans le jeu
+- s'il fait beau, on garde une météo claire
+
+Il faudra regarder comment récupérer la météo côté iPhone, puis faire le lien avec le système de météo déjà présent dans le jeu sans casser son ambiance.
+
+2. Résolution native retina complète (?)(!)
+
+Le rendu est déjà plus propre sur iPhone grâce au `devicePixelRatio`, mais il reste encore une étape si je veux un rendu vraiment propre partout :
+
+- garder le calcul retina actuel
+- voir si certains sprites ou assets doivent exister en meilleure résolution
+
+3. Ratio portrait non carré (?)(!)
+
+Pour l'instant, cette partie est en pause.
+
+Un premier essai a montré que les backgrounds carrés d'origine ne supportent pas un simple recadrage vertical. 
+Il faudra :
+
+- définir un vrai nouveau format logique
+- redessiner ou étendre les décors scène par scène
+- repositionner le pet, les objets et les points d'interaction
+- vérifier les écrans secondaires et les overlays
+
+4. Vérification Hubchi et fonctions en ligne
+
+La partie sociale repose sur Google Apps Script. Il faudra vérifier le comportement des redirections cross-origin dans l'environnement `capacitor://localhost`, notamment pour :
+
+- l'upload Hubchi
+- la récupération de la liste de tamagotchis
+- les interactions en ligne
+
+Si nécessaire, il faudra autoriser la navigation vers les domaines Google concernés dans la configuration Capacitor.
+
+5. Widget iOS
+
+Pour l'instant ce n'est pas une priorité.
+
+L'idée d'un widget existe, mais le vrai widget "vivant" en continu n'apporte pas assez par rapport à la complexité et aux limites iOS. Donc à revoir plus tard seulement si une version simple a un vrai intérêt.
+
+6. Live Activity
+
+Même chose, à garder comme piste, mais pas comme priorité immédiate.
+
+Ça pourrait servir plus tard pour afficher un état critique sur l'écran verrouillé ou la Dynamic Island.
