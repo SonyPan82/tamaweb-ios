@@ -2891,30 +2891,30 @@ const App = {
         open_bathroom_menu: function(){
             App.displayList([
                 {
-                    name: 'bathe',
+                    name: App.isFrenchLanguage() ? 'bain' : 'bathe',
                     onclick: () => { 
                         Activities.bathe();
                     }
                 },
                 {
-                    name: 'use toilet',
+                    name: App.isFrenchLanguage() ? 'toilettes' : 'use toilet',
                     onclick: () => { 
                         Activities.poop();
                     }
                 },
                 {
-                    name: `brush teeth`,
+                    name: App.isFrenchLanguage() ? `brosser les dents` : `brush teeth`,
                     onclick: () => {
                         Activities.brushTeeth();
                     }
                 },
                 {
-                    name: 'clean room',
+                    name: App.isFrenchLanguage() ? 'nettoyer' : 'clean room',
                     onclick: () => {
                         App.handlers.clean();
                     }
                 },
-            ], null, 'Cleaning')
+            ], null, App.isFrenchLanguage() ? 'Nettoyage' : 'Cleaning')
         },
         open_credits: function(){
             return App.displayList([
@@ -2928,6 +2928,18 @@ const App = {
                         <a href="https://samandev.itch.io" target="_blank">itch</a>
                     </small>
                     `
+                },
+                {
+                    type: 'text',
+                    name: App.isFrenchLanguage()
+                        ? `<small>portage iOS par</small>
+                        <br>
+                        Yohan
+                        `
+                        : `<small>native iOS port by</small>
+                        <br>
+                        Yohan
+                        `
                 },
                 {
                     type: 'text',
@@ -3732,8 +3744,33 @@ const App = {
                 },
             ], null, 'Settings')
         },
-        open_stats: function(){
-            const getCareRatingIcons = (current = App.pet.stats.current_care, max = App.pet.stats.max_care, sizePx) => {
+	        open_stats: function(){
+            const t = App.isFrenchLanguage()
+                ? {
+                    money: 'Argent',
+                    hunger: 'Faim',
+                    fun: 'Joie',
+                    sleep: 'Sommeil',
+                    discipline: 'Discipline',
+                    expression: 'Expression',
+                    logic: 'Logique',
+                    endurance: 'Endurance',
+                    care: 'SOIN',
+                    skillsInfo: `Des compétences assez élevées remplacent les niveaux de soin au-dessus de 1 pendant l'évolution.`,
+                }
+                : {
+                    money: 'Money',
+                    hunger: 'Hunger',
+                    fun: 'Fun',
+                    sleep: 'Sleep',
+                    discipline: 'Discipline',
+                    expression: 'Expression',
+                    logic: 'Logic',
+                    endurance: 'Endurance',
+                    care: 'CARE',
+                    skillsInfo: 'High enough skills will override care ratings above 1 when evolving.',
+                };
+	            const getCareRatingIcons = (current = App.pet.stats.current_care, max = App.pet.stats.max_care, sizePx) => {
                 return new Array(max).fill('').map((_, i) => {
                     const style = i >= current ? 'opacity: 0.5; filter:grayscale();' : 'filter:hue-rotate(310deg);';
                     const finalStyle = `${style} ${sizePx ? `width: ${sizePx}px;` : ''}`;
@@ -3754,27 +3791,27 @@ const App = {
                         <div class="tab-content">
                             <div class="inner-padding b-radius-10 flex-gap-2 flex flex-dir-col m mt-6">
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Money</div>
+                                    <div class="stats-label">${t.money}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:gold', true)}</b> 
                                     <b>$${App.pet.stats.gold}</b>
                                 </div>
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Hunger</div>
+                                    <div class="stats-label">${t.hunger}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:food', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_hunger / App.pet.stats.max_hunger * 100 ).node.outerHTML}
                                 </div>
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Fun</div>
+                                    <div class="stats-label">${t.fun}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:fun', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_fun / App.pet.stats.max_fun * 100 ).node.outerHTML}
                                 </div>
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Sleep</div>
+                                    <div class="stats-label">${t.sleep}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:sleep', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_sleep / App.pet.stats.max_sleep * 100 ).node.outerHTML}
                                 </div>
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Discipline</div>
+                                    <div class="stats-label">${t.discipline}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:discipline', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_discipline / App.pet.stats.max_discipline * 100 ).node.outerHTML}
                                 </div>
@@ -3785,28 +3822,28 @@ const App = {
                         <div class="tab-content">
                             <div class="inner-padding b-radius-10 flex-gap-2 flex flex-dir-col m mt-6">
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Expression</div>
+                                    <div class="stats-label">${t.expression}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:expression', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_expression / 100 * 100 ).node.outerHTML}
                                 </div>
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Logic</div>
+                                    <div class="stats-label">${t.logic}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:logic', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_logic / 100 * 100 ).node.outerHTML}
                                 </div>
                                 <div class="relative flex flex-dir-row align-center flex-gap-1">
-                                    <div class="stats-label">Endurance</div>
+                                    <div class="stats-label">${t.endurance}</div>
                                     <b class="outlined-icon flex flex-center" style="width: 18px;">${App.getIcon('special:endurance', true)}</b> 
                                     ${App.createProgressbar( App.pet.stats.current_endurance / 100 * 100 ).node.outerHTML}
                                 </div>
                                 <div class="flex-between align-center">
-                                    <b>CARE:</b> <div style="display: inline-flex; gap: 1px">${getCareRatingIcons()}</div>
+                                    <b>${t.care}:</b> <div style="display: inline-flex; gap: 1px">${getCareRatingIcons()}</div>
                                 </div>
                             </div>
                             <div class="inner-padding b-radius-10 uppercase list-text surface-stylized ${!App.settings.skillsAffectingEvolution ? 'hidden' : ''}">
                                 <small>
                                     <i class="fa-solid fa-info-circle"></i>
-                                    High enough skills will override care ratings above 1 when evolving.
+                                    ${t.skillsInfo}
                                     <hr>
                                     <div>
                                         <span class="flex-between items-center no-width-children"> ${App.getIcon('special:endurance')}➜ ${getCareRatingIcons(1, undefined, 16)} </span>
