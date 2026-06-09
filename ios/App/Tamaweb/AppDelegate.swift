@@ -84,7 +84,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate, WKScriptMessageHandler {
             return navigationController.viewControllers.first as? CAPBridgeViewController
         }
 
-        return UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController as? CAPBridgeViewController
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+
+        if let bridgeViewController = keyWindow?.rootViewController as? CAPBridgeViewController {
+            return bridgeViewController
+        }
+
+        if let navigationController = keyWindow?.rootViewController as? UINavigationController {
+            return navigationController.viewControllers.first as? CAPBridgeViewController
+        }
+
+        return nil
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

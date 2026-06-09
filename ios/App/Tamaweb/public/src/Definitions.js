@@ -2793,6 +2793,144 @@ App.definitions = (() => {
                     "Take it one day at a time. The tough moments are only temporary, and better days are just around the corner.",
                 ],
             ],
+            affirmations_fr: [
+                [
+                    "Derniere minute : un heros local repand le bonheur a chacun de ses pas !",
+                    "Nos sources confirment qu une personne tres speciale (oui, c est toi !) rend le monde meilleur simplement en etant elle-meme.",
+                ],
+                [
+                    "Previsions : de beaux jours arrivent !",
+                    "L avenir s annonce lumineux et rempli de joie pour notre lecteur prefere ! Continue de sourire, de belles choses arrivent.",
+                ],
+                [
+                    "Interview exclusive : les experts sont formels, tu te debrouilles tres bien !",
+                    "Selon les experts, les petits pas menent aux grandes reussites, et tu es exactement sur la bonne voie !",
+                ],
+                [
+                    "A la une : tu es plus fort(e) que tu ne le crois !",
+                    "De recentes etudes montrent que la force et le courage brillent intensement chez notre lecteur prefere. Continue comme ca !",
+                ],
+                [
+                    "Zoom sur la communaute : un coeur en or a ete trouve juste ici !",
+                    "Dans une histoire touchante, nous avons decouvert un vrai tresor (toi !) qui repand sa gentillesse partout !",
+                ],
+                [
+                    "Avis public : bravoure et gentillesse officiellement reconnues !",
+                    "Les autorites ont salue une personne extraordinaire pour son courage et sa bienveillance. Felicitations a toi !",
+                ],
+                [
+                    "Boost du jour : c est grace a toi qu aujourd hui est special !",
+                    "Grace a ta chaleur et a ta bonne humeur, cette journee est officiellement meilleure ! Continue de partager ces bonnes ondes !",
+                ],
+                [
+                    "Bonne nouvelle du jour : le bonheur se cache dans chaque petit instant !",
+                    "La joie est partout, et c est grace a l incroyable etat d esprit de notre lecteur. Continue de rayonner !",
+                ],
+                [
+                    "Tu l as lu ici en premier : ton parcours est plein de promesses !",
+                    "A chaque pas, tu ecris une histoire incroyable. Reste a l ecoute, le meilleur est a venir !",
+                ],
+                [
+                    "Gros titres : la meilleure version de toi fait parler d elle !",
+                    "Des temoins affirment t avoir vu accomplir de grandes choses ! Toute la communaute t encourage !",
+                ],
+                [
+                    "Derniere minute : le niveau de gentillesse atteint un record historique !",
+                    "Les rapports indiquent que tes actions remplissent le monde de bienveillance et de positivite. Continue comme ca !",
+                ],
+                [
+                    "Mise a jour de la une : la confiance grimpe dans toute la region !",
+                    "Nos sources confirment que ton travail et ta confiance en toi inspirent toutes les personnes autour de toi !",
+                ],
+                [
+                    "Reportage special : tu es la star de l histoire d aujourd hui !",
+                    "Toute notre redaction est d accord : tu accomplis de tres belles choses et tu merites pleinement la lumiere. Continue de briller !",
+                ],
+                [
+                    "Annonce publique : tu rends chaque jour meilleur !",
+                    "Les declarations officielles l affirment : ta presence illumine meme les moments les plus ternes. Merci d etre toi !",
+                ],
+                [
+                    "Edition speciale ! Tu es aime(e) plus que les mots ne peuvent le dire !",
+                    "Ton empathie et ton attention touchent les coeurs de la plus belle des manieres. Le monde a de la chance de t avoir !",
+                ],
+                [
+                    "A la une : le bonheur a ete retrouve dans ton sourire !",
+                    "Des temoins affirment que ton sourire peut faire disparaitre n importe quelle tristesse. Continue de repandre la joie !",
+                ],
+                [
+                    "Alerte info : de grandes reussites t attendent !",
+                    "Les observateurs prevoient que ton implication et tes efforts te meneront vers de superbes accomplissements. Garde le cap !",
+                ],
+                [
+                    "Temps fort du jour : tu es une vraie source d inspiration !",
+                    "Les membres de la communaute t ont cite en exemple de resilience et d espoir. Felicitations !",
+                ],
+                [
+                    "Previsions : tu es promis(e) a de tres belles choses !",
+                    "Les etoiles s alignent et annoncent un futur rempli de bonheur et de reussite pour toi. Continue d avancer !",
+                ],
+                [
+                    "Dernier echo : tu es au coeur de toutes les conversations !",
+                    "Tout le monde parle de ta gentillesse, de ton courage et de ton charme. Continue de faire des vagues !",
+                ],
+                [
+                    "Derniere minute : un avenir radieux t attend !",
+                    "Les meilleurs analystes prevoient que ton travail et ta positivite ouvrent la voie a de tres belles choses.",
+                ],
+                [
+                    "Projecteur : tes actions font briller le monde !",
+                    "Les rapports confirment que ce que tu fais apporte de la lumiere et de l amour autour de toi. Continue de rayonner !",
+                ],
+                [
+                    "Derniere minute : tu es suffisant(e) exactement comme tu es !",
+                    "Dans un monde parfois ecrasant, ton courage d etre toi-meme est vraiment inspirant. Merci d etre toi.",
+                ],
+                [
+                    "Zoom a la une : tes efforts comptent bien plus que tu ne l imagines !",
+                    "Meme les plus petites choses que tu fais ont de l importance. Tu crees partout des ondes de gentillesse et d espoir.",
+                ],
+                [
+                    "Portrait exclusif : ta force change doucement le monde !",
+                    "Nous le voyons, cette facon que tu as d avancer meme quand c est difficile. C est une force dont tu peux etre fier(e).",
+                ],
+                [
+                    "Grande histoire du jour : tu es aime(e) bien plus que tu ne le sais !",
+                    "On l oublie facilement parfois, mais tu es profondement apprecie(e) et precieux(se) pour les gens autour de toi. N en doute jamais.",
+                ],
+                [
+                    "Mise a jour : tu apprends et tu grandis chaque jour !",
+                    "Chaque difficulte que tu traverses te faconne encore davantage. Fais confiance au processus, tu te debrouilles tres bien.",
+                ],
+                [
+                    "Reportage special : ton grand coeur rend la vie meilleure !",
+                    "Dans un monde qui a besoin de plus d amour, ta compassion est un cadeau qui change des vies. Ne sous-estime jamais sa force.",
+                ],
+                [
+                    "Sujet principal : tu es bien plus fort(e) que ce que tu ressens en ce moment !",
+                    "Tu as le droit d avoir des jours difficiles, mais souviens-toi que ta resilience t a deja porte(e) tres loin. Continue de croire en toi.",
+                ],
+                [
+                    "Rappel du jour : tu merites les belles choses qui arrivent vers toi !",
+                    "La gentillesse que tu as offerte et l amour que tu as partage te reviennent. Sois pret(e) a les recevoir, tu l as merite.",
+                ],
+                [
+                    "Alerte info : ta voix compte, et toi aussi !",
+                    "Ta facon de penser, de ressentir et de t exprimer rend le monde plus riche. Ta presence est un cadeau irremplacable.",
+                ],
+                [
+                    "Portrait personnel : tu es exactement la ou tu dois etre !",
+                    "La vie n est pas une course, et chaque pas fait partie de ton histoire unique. Tu es sur la bonne route, fais-toi confiance.",
+                ],
+                [
+                    "Scooop a la une : tu possedes une lumiere qui guide les autres !",
+                    "Meme quand tu ne la vois pas, ta chaleur et ta gentillesse inspirent les gens autour de toi. Continue de briller, c est magnifique.",
+                ],
+                [
+                    "Previsions : la guerison et le bonheur sont en approche !",
+                    "Avance un jour a la fois. Les moments difficiles ne durent pas, et des jours meilleurs approchent deja.",
+                ],
+            ],
             news: [
                 [
                     "Breaking News: The Sunflower Festival is in Full Bloom!",

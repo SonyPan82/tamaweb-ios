@@ -75,7 +75,6 @@ const App = {
         NOTIFICATION_ID_PLANT_WATER: 41004,
         NOTIFICATION_ID_PLANT_DEAD: 41005,
         NOTIFICATION_ID_DEATH: 41006,
-        NOTIFICATION_ID_TEST: 41007,
         FOOD_SPRITESHEET: 'resources/img/item/foods_on.png',
         FOOD_SPRITESHEET_DIMENSIONS: {
             cellNumber: 1,
@@ -2612,26 +2611,35 @@ const App = {
         },
         show_newspaper: function(headline, text){
             if(!headline && !text){
-                [headline, text] = randomFromArray(App.definitions.mail.affirmations);
+                const articles = App.isFrenchLanguage()
+                    ? (App.definitions.mail.affirmations_fr || App.definitions.mail.affirmations)
+                    : App.definitions.mail.affirmations;
+                [headline, text] = randomFromArray(articles);
             }
 
             const salesDaySection = !App.isSalesDay() ? '' : `
                 <div>
-                    <b style="color: orangered;">Discount Day!</b>
+                    <b style="color: orangered;">${App.isFrenchLanguage() ? 'Jour de promo !' : 'Discount Day!'}</b>
                     <br>
-                    Local shops are slashing prices for today only. Don't miss out on huge savings! Check them out and save big!
+                    ${App.isFrenchLanguage()
+                        ? 'Les boutiques locales cassent leurs prix pour aujourd hui seulement. Ne rate pas ces super economies ! Va y jeter un oeil et fais de bonnes affaires !'
+                        : 'Local shops are slashing prices for today only. Don\'t miss out on huge savings! Check them out and save big!'}
                     <br><br><br>
                 </div>
             `;
 
             const christmasSection = !App.isDuringChristmas() ? '' : `
                 <div>
-                    <b style="color: darkgreen;">Happy Xmas!</b>
+                    <b style="color: darkgreen;">${App.isFrenchLanguage() ? 'Joyeux Noel !' : 'Happy Xmas!'}</b>
                     <br>
-                    DayMail sends you warm holiday wishes and a joyous New Year!
+                    ${App.isFrenchLanguage()
+                        ? 'DayMail t envoie de chaleureuses fetes et te souhaite une merveilleuse nouvelle annee !'
+                        : 'DayMail sends you warm holiday wishes and a joyous New Year!'}
                     <br><br>
                     <small>
-                        During xmas, you'll receive 2x rewards from opening mission chests, so don't forget to check them out!
+                        ${App.isFrenchLanguage()
+                            ? 'Pendant Noel, tu recevras 2x plus de recompenses en ouvrant les coffres de mission, alors n oublie pas d aller les voir !'
+                            : 'During xmas, you\'ll receive 2x rewards from opening mission chests, so don\'t forget to check them out!'}
                     </small>
                     <br><br><br>
                 </div>
@@ -3492,11 +3500,6 @@ const App = {
                                                 item._mount();
                                                 return true;
                                             }
-                                        },
-                                        {
-                                            _ignore: !App.getNativeLocalNotifications(),
-                                            name: 'tester une notification',
-                                            onclick: () => App.sendNativeNotificationTest(),
                                         },
                                     ], null, 'Notifications');
                                 }
@@ -8307,6 +8310,9 @@ const App = {
         }
         new Notification(title, options);
     },
+    isFrenchLanguage: function(){
+        return !!window._isFrench;
+    },
     getIosNativeLocalNotifications: function(){
         if(!App.isNativeApp) return null;
         if(App.temp.iosNativeLocalNotifications) return App.temp.iosNativeLocalNotifications;
@@ -8852,47 +8858,6 @@ const App = {
         btn?._mount?.();
         App.displayPopup('Notifications activees');
         return true;
-    },
-    sendNativeNotificationTest: async function(){
-        const LocalNotifications = App.getNativeLocalNotifications();
-        if(!App.isNativeApp || !LocalNotifications){
-            App.displayPopup('Test notification indisponible sur cette version.');
-            return false;
-        }
-
-        const permission = await App.ensureNativeNotificationPermission(true);
-        if(!permission.granted){
-            App.displayPopup('Autorise d abord les notifications iPhone.');
-            return false;
-        }
-
-        const fireAt = new Date(Date.now() + 5000);
-
-        try {
-            await LocalNotifications.cancel({
-                notifications: [{ id: App.constants.NOTIFICATION_ID_TEST }]
-            });
-        } catch(e) {
-            console.warn('Unable to cancel previous test notification', e);
-        }
-
-        try {
-            await LocalNotifications.schedule({
-                notifications: [{
-                    id: App.constants.NOTIFICATION_ID_TEST,
-                    title: 'Tamaweb',
-                    body: 'Notification de test iPhone.',
-                    schedule: { at: fireAt },
-                    threadIdentifier: 'test-status',
-                }]
-            });
-            App.displayPopup('Notification de test prévue dans 5 secondes.');
-            return true;
-        } catch(e) {
-            console.warn('Unable to schedule test notification', e);
-            App.displayPopup(`Echec du test notification: ${e?.message || e}`);
-            return false;
-        }
     },
     checkPetStats: function(){
         if(!App.isTester()) return setTimeout(() => App.checkPetStats(), 10000);
